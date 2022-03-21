@@ -30,6 +30,7 @@ def g_pos(v):
     else:
         return np.inf
 
+
 def prox_pos(rho, v):
     y = v
     y[np.where(v < 0)] = 0
