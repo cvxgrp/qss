@@ -1,1 +1,1 @@
-# qss
+# QSS: Quadratic-Separable Solver
