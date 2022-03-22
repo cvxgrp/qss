@@ -47,6 +47,15 @@ class QSS(object):
         zk1 = np.zeros(dim)
         uk1 = np.zeros(dim)
 
+        # Scaling
+        D = 2 * sp.sparse.identity(dim)
+        E = 2 * sp.sparse.identity(constr_dim)
+        P = D @ P @ D
+        q = D @ q
+        A = E @ A @ D
+        b = E @ b
+        rho_scaling = D.diagonal()
+
         # Constructing KKT matrix
         if A.nnz != 0:
             quad_kkt = sp.sparse.vstack(
@@ -70,7 +79,7 @@ class QSS(object):
                 xk1 = F.solve(-q + rho * (zk - uk))
 
             # Update z
-            zk1 = util.apply_prox_ops(rho, g, alpha * xk1 + (1 - alpha) * zk + uk)
+            zk1 = util.apply_prox_ops(rho * rho_scaling, g, alpha * xk1 + (1 - alpha) * zk + uk)
 
             # Update u
             uk1 = uk + alpha * xk1 + (1 - alpha) * zk - zk1
