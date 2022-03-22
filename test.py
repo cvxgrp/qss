@@ -74,7 +74,7 @@ def test_l1_trend_filtering():
     y = np.random.rand(dim)
 
     data = {}
-    data["P"] = np.diag(np.concatenate([np.ones(dim), np.zeros(dim - 2)]))
+    data["P"] = sp.sparse.diags(np.concatenate([np.ones(dim), np.zeros(dim - 2)]))
     data["q"] = -np.concatenate([y, np.zeros(dim - 2)])
     data["r"] = 0.5 * y.T @ y
     data["b"] = np.zeros(dim - 2)
@@ -84,9 +84,7 @@ def test_l1_trend_filtering():
     one_zero[0] = 1
     D = sp.linalg.toeplitz(one_zero, np.concatenate([[1, -2, 1], np.zeros(dim - 3)]))
 
-    data["A"] = np.hstack([D, np.identity(dim - 2)])
-    data["P"] = sp.sparse.csc_matrix(data["P"])
-    data["A"] = sp.sparse.csc_matrix(data["A"])
+    data["A"] = sp.sparse.hstack([D, sp.sparse.identity(dim - 2)])
 
     x = cp.Variable(dim)
 

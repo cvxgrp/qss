@@ -86,6 +86,7 @@ class QSS(object):
 
             if i % 1 == 0 and self.evaluate_stop_crit(xk, zk, zk1, uk, dim, rho):
                 print("Finished in", i, "iterations")
+                # NOTE: If we also want x, need to recover with x = D @ xk1
                 return 0.5 * xk1 @ P @ xk1 + q @ xk1 + r + util.apply_g_funcs(g, zk1)
 
             xk = xk1
