@@ -37,6 +37,7 @@ def test_sd_small():
 
 
 def test_nonneg_ls():
+    np.random.seed(1234)
     p = 100
     n = 500
     G = np.random.rand(n, p)
@@ -67,6 +68,7 @@ def test_nonneg_ls():
 
 
 def test_l1_trend_filtering():
+    np.random.seed(1234)
     dim = 1000
     lmda = 1
     y = np.random.rand(dim)
