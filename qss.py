@@ -23,6 +23,60 @@ class QSS(object):
 
         return False
 
+    def trivial_scaling(self, P, q, r, A, b):
+        D = 2 * sp.sparse.identity(P.shape[0])
+        E = 2 * sp.sparse.identity(A.shape[0])
+        P = D @ P @ D
+        q = D @ q
+        A = E @ A @ D
+        b = E @ b
+        rho_scaling = D.diagonal()
+
+        return P, q, r, A, b, rho_scaling
+
+    def ruiz_equilibration(self, P, q, r, A, b):
+        dim = P.shape[0]
+        constr_dim = A.shape[0]
+        eps_equil = 1e-3
+
+        if A.nnz != 0:
+            M = sp.sparse.vstack(
+                [
+                    sp.sparse.hstack([P, A.T]),
+                    sp.sparse.hstack(
+                        [A, sp.sparse.csc_matrix((constr_dim, constr_dim))]
+                    ),
+                ]
+            )
+            qb = np.concatenate([q, b])
+        else:
+            constr_dim = 0
+            M = P
+            qb = q
+
+        c = 1
+        S = sp.sparse.identity(dim + constr_dim)
+        delta = np.zeros(dim + constr_dim)
+
+        while np.linalg.norm(1 - delta, ord=np.inf) > eps_equil:
+            delta = 1 / np.sqrt(sp.sparse.linalg.norm(M, ord=np.inf, axis=0))
+            Delta = sp.sparse.diags(delta)
+            M = Delta @ M @ Delta
+            qb = Delta @ qb
+            S = sp.sparse.diags(delta) @ S
+
+        if A.nnz != 0:
+            return (
+                M[:dim, :dim],
+                qb[:dim],
+                r,
+                M[dim:, :dim],
+                qb[dim:],
+                S.diagonal()[:dim],
+            )
+        else:
+            return M, qb, r, A, b, S.diagonal()
+
     def solve(self):
         P = self._data["P"]
         q = self._data["q"]
@@ -47,14 +101,11 @@ class QSS(object):
         zk1 = np.zeros(dim)
         uk1 = np.zeros(dim)
 
+        rho_scaling = np.ones(dim)
+
         # Scaling
-        D = 2 * sp.sparse.identity(dim)
-        E = 2 * sp.sparse.identity(constr_dim)
-        P = D @ P @ D
-        q = D @ q
-        A = E @ A @ D
-        b = E @ b
-        rho_scaling = D.diagonal()
+        # P, q, r, A, b, rho_scaling = self.trivial_scaling(P, q, r, A, b)
+        # P, q, r, A, b, rho_scaling = self.ruiz_equilibration(P, q, r, A, b)
 
         # Constructing KKT matrix
         if A.nnz != 0:
@@ -79,7 +130,9 @@ class QSS(object):
                 xk1 = F.solve(-q + rho * (zk - uk))
 
             # Update z
-            zk1 = util.apply_prox_ops(rho * rho_scaling, g, alpha * xk1 + (1 - alpha) * zk + uk)
+            zk1 = util.apply_prox_ops(
+                rho * rho_scaling, g, alpha * xk1 + (1 - alpha) * zk + uk
+            )
 
             # Update u
             uk1 = uk + alpha * xk1 + (1 - alpha) * zk - zk1

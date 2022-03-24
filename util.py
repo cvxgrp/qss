@@ -49,6 +49,6 @@ def apply_g_funcs(g, x):
 
 def apply_prox_ops(rho, g, x):
     for i in range(len(prox_ops)):
-        idx = np.where(g==i)
+        idx = np.where(g == i)
         x[idx] = prox_ops[i](rho[idx], x[idx])
     return x
