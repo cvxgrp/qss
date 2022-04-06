@@ -13,31 +13,23 @@ class QSS(object):
         self._rho = rho
         return
 
-    def evaluate_stop_crit(self, xk, zk, zk1, uk, dim, rho):
+    def evaluate_stop_crit(self, xk, xk1, zk, zk1, uk, uk1, dim, rho):
         epri = np.sqrt(dim) * self._eps_abs + self._eps_rel * max(
-            np.linalg.norm(xk), np.linalg.norm(zk)
+            np.linalg.norm(xk1), np.linalg.norm(zk1)
         )
-        edual = np.sqrt(dim) * self._eps_abs + self._eps_rel * np.linalg.norm(rho * uk)
-        if np.linalg.norm(xk - zk) < epri and np.linalg.norm(rho * (zk - zk1)) < edual:
+        edual = np.sqrt(dim) * self._eps_abs + self._eps_rel * np.linalg.norm(rho * uk1)
+        if (
+            np.linalg.norm(xk1 - zk1) < epri
+            and np.linalg.norm(rho * (zk - zk1)) < edual
+        ):
             return True
 
         return False
 
-    def trivial_scaling(self, P, q, r, A, b):
-        D = 2 * sp.sparse.identity(P.shape[0])
-        E = 2 * sp.sparse.identity(A.shape[0])
-        P = D @ P @ D
-        q = D @ q
-        A = E @ A @ D
-        b = E @ b
-        rho_scaling = D.diagonal()
-
-        return P, q, r, A, b, rho_scaling
-
     def ruiz_equilibration(self, P, q, r, A, b):
         dim = P.shape[0]
         constr_dim = A.shape[0]
-        eps_equil = 1e-3
+        eps_equil = 1e-4
 
         if A.nnz != 0:
             M = sp.sparse.vstack(
@@ -59,7 +51,9 @@ class QSS(object):
         delta = np.zeros(dim + constr_dim)
 
         while np.linalg.norm(1 - delta, ord=np.inf) > eps_equil:
-            delta = 1 / np.sqrt(sp.sparse.linalg.norm(M, ord=np.inf, axis=0))
+            norm_sqrt = np.sqrt(sp.sparse.linalg.norm(M, ord=np.inf, axis=0))
+            norm_sqrt[norm_sqrt==0] = 1 # do this to prevent divide by zero
+            delta = 1 / norm_sqrt
             Delta = sp.sparse.diags(delta)
             M = Delta @ M @ Delta
             qb = Delta @ qb
@@ -104,15 +98,16 @@ class QSS(object):
         rho_scaling = np.ones(dim)
 
         # Scaling
-        # P, q, r, A, b, rho_scaling = self.trivial_scaling(P, q, r, A, b)
-        # P, q, r, A, b, rho_scaling = self.ruiz_equilibration(P, q, r, A, b)
+        P, q, r, A, b, rho_scaling = self.ruiz_equilibration(P, q, r, A, b)
 
         # Constructing KKT matrix
         if A.nnz != 0:
             quad_kkt = sp.sparse.vstack(
                 [
                     sp.sparse.hstack([P + rho * sp.sparse.identity(dim), A.T]),
-                    sp.sparse.hstack([A, np.zeros((constr_dim, constr_dim))]),
+                    sp.sparse.hstack(
+                        [A, sp.sparse.csc_matrix((constr_dim, constr_dim))]
+                    ),
                 ]
             )
         else:
@@ -131,16 +126,23 @@ class QSS(object):
 
             # Update z
             zk1 = util.apply_prox_ops(
-                rho * rho_scaling, g, alpha * xk1 + (1 - alpha) * zk + uk
+                rho / rho_scaling, g, alpha * xk1 + (1 - alpha) * zk + uk
             )
 
             # Update u
             uk1 = uk + alpha * xk1 + (1 - alpha) * zk - zk1
 
-            if i % 1 == 0 and self.evaluate_stop_crit(xk, zk, zk1, uk, dim, rho):
+            if i % 100 == 0 and self.evaluate_stop_crit(
+                xk, xk1, zk, zk1, uk, uk1, dim, rho
+            ):
                 print("Finished in", i, "iterations")
-                # NOTE: If we also want x, need to recover with x = D @ xk1
-                return 0.5 * xk1 @ P @ xk1 + q @ xk1 + r + util.apply_g_funcs(g, zk1)
+                return (
+                    0.5 * zk1 @ P @ zk1
+                    + q @ zk1
+                    + r
+                    + util.apply_g_funcs(g, rho_scaling * zk1),
+                    rho_scaling * zk1,
+                )
 
             xk = xk1
             zk = zk1
