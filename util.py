@@ -42,13 +42,16 @@ prox_ops = [prox_zero, prox_abs, prox_pos]
 
 
 def apply_g_funcs(g, x):
+    y = np.zeros(len(x))
     for i in range(len(g_funcs)):
-        x[np.where(g == i)] = g_funcs[i](x[np.where(g == i)])
-    return np.sum(x)
+        idx = np.where(g == i)
+        y[idx] = g_funcs[i](x[idx])
+    return np.sum(y)
 
 
 def apply_prox_ops(rho, g, x):
+    y = np.zeros(len(x))
     for i in range(len(prox_ops)):
         idx = np.where(g == i)
-        x[idx] = prox_ops[i](rho[idx], x[idx])
-    return x
+        y[idx] = prox_ops[i](rho[idx], x[idx])
+    return y

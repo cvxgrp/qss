@@ -1,16 +1,31 @@
 import numpy as np
 import scipy as sp
 import qdldl
+import precondition
+import matrix_util
 import util
 
 
 class QSS(object):
-    def __init__(self, data, eps_abs=1e-4, eps_rel=1e-4, alpha=1.4, rho=0.04):
+    def __init__(
+        self,
+        data,
+        eps_abs=1e-4,
+        eps_rel=1e-4,
+        alpha=1.4,
+        rho=0.04,
+        precond=True,
+        reg=True,
+        use_iter_refinement=True,
+    ):
         self._data = data
         self._eps_abs = eps_abs
         self._eps_rel = eps_rel
         self._alpha = alpha
         self._rho = rho
+        self._precond = precond
+        self._reg = reg
+        self._use_iter_refinement = use_iter_refinement
         return
 
     def evaluate_stop_crit(self, xk, xk1, zk, zk1, uk, uk1, dim, rho):
@@ -25,51 +40,6 @@ class QSS(object):
             return True
 
         return False
-
-    def ruiz_equilibration(self, P, q, r, A, b):
-        dim = P.shape[0]
-        constr_dim = A.shape[0]
-        eps_equil = 1e-4
-
-        if A.nnz != 0:
-            M = sp.sparse.vstack(
-                [
-                    sp.sparse.hstack([P, A.T]),
-                    sp.sparse.hstack(
-                        [A, sp.sparse.csc_matrix((constr_dim, constr_dim))]
-                    ),
-                ]
-            )
-            qb = np.concatenate([q, b])
-        else:
-            constr_dim = 0
-            M = P
-            qb = q
-
-        c = 1
-        S = sp.sparse.identity(dim + constr_dim)
-        delta = np.zeros(dim + constr_dim)
-
-        while np.linalg.norm(1 - delta, ord=np.inf) > eps_equil:
-            norm_sqrt = np.sqrt(sp.sparse.linalg.norm(M, ord=np.inf, axis=0))
-            norm_sqrt[norm_sqrt==0] = 1 # do this to prevent divide by zero
-            delta = 1 / norm_sqrt
-            Delta = sp.sparse.diags(delta)
-            M = Delta @ M @ Delta
-            qb = Delta @ qb
-            S = sp.sparse.diags(delta) @ S
-
-        if A.nnz != 0:
-            return (
-                M[:dim, :dim],
-                qb[:dim],
-                r,
-                M[dim:, :dim],
-                qb[dim:],
-                S.diagonal()[:dim],
-            )
-        else:
-            return M, qb, r, A, b, S.diagonal()
 
     def solve(self):
         P = self._data["P"]
@@ -86,6 +56,7 @@ class QSS(object):
 
         dim = P.shape[0]
         constr_dim = A.shape[0]
+        has_constr = True if A.nnz != 0 else False
 
         xk = np.zeros(dim)
         zk = np.zeros(dim)
@@ -98,29 +69,30 @@ class QSS(object):
         rho_scaling = np.ones(dim)
 
         # Scaling
-        P, q, r, A, b, rho_scaling = self.ruiz_equilibration(P, q, r, A, b)
+        if self._precond:
+            P, q, r, A, b, rho_scaling = precondition.ruiz(P, q, r, A, b)
 
         # Constructing KKT matrix
-        if A.nnz != 0:
-            quad_kkt = sp.sparse.vstack(
-                [
-                    sp.sparse.hstack([P + rho * sp.sparse.identity(dim), A.T]),
-                    sp.sparse.hstack(
-                        [A, sp.sparse.csc_matrix((constr_dim, constr_dim))]
-                    ),
-                ]
-            )
+        if has_constr:
+            quad_kkt = matrix_util.build_kkt(P, A, 0, rho, dim, constr_dim)
+            quad_kkt_reg = matrix_util.build_kkt(P, A, -1e-7, rho, dim, constr_dim)
+            F = qdldl.Solver(quad_kkt_reg)
         else:
             quad_kkt = P + rho * sp.sparse.identity(dim)
-        F = qdldl.Solver(quad_kkt)
+            F = qdldl.Solver(quad_kkt)
 
         i = 0
         while True:
             i += 1
 
             # Update x
-            if A.nnz != 0:
-                xk1 = F.solve(np.concatenate([-q + rho * (zk - uk), b]))[:dim]
+            if has_constr:
+                if self._use_iter_refinement:
+                    xk1 = matrix_util.ir_solve(
+                        quad_kkt, F, np.concatenate([-q + rho * (zk - uk), b])
+                    )[:dim]
+                else:
+                    xk1 = F.solve(np.concatenate([-q + rho * (zk - uk), b]))[:dim]
             else:
                 xk1 = F.solve(-q + rho * (zk - uk))
 
