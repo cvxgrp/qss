@@ -3,7 +3,7 @@ import scipy as sp
 import qdldl
 import precondition
 import matrix_util
-import util
+import proximal
 
 
 class QSS(object):
@@ -97,7 +97,7 @@ class QSS(object):
                 xk1 = F.solve(-q + rho * (zk - uk))
 
             # Update z
-            zk1 = util.apply_prox_ops(
+            zk1 = proximal.apply_prox_ops(
                 rho / rho_scaling, g, alpha * xk1 + (1 - alpha) * zk + uk
             )
 
@@ -112,7 +112,7 @@ class QSS(object):
                     0.5 * zk1 @ P @ zk1
                     + q @ zk1
                     + r
-                    + util.apply_g_funcs(g, rho_scaling * zk1),
+                    + proximal.apply_g_funcs(g, rho_scaling * zk1),
                     rho_scaling * zk1,
                 )
 
