@@ -66,11 +66,12 @@ class QSS(object):
         zk1 = np.zeros(dim)
         uk1 = np.zeros(dim)
 
-        rho_scaling = np.ones(dim)
+        equil_scaling = np.ones(dim)
 
         # Scaling
         if self._precond:
-            P, q, r, A, b, rho_scaling = precondition.ruiz(P, q, r, A, b)
+            # We are now solving for xtilde, where x = equil_scaling * xtilde
+            P, q, r, A, b, equil_scaling = precondition.ruiz(P, q, r, A, b)
 
         # Constructing KKT matrix
         if has_constr:
@@ -98,7 +99,7 @@ class QSS(object):
 
             # Update z
             zk1 = proximal.apply_prox_ops(
-                rho / rho_scaling, g, alpha * xk1 + (1 - alpha) * zk + uk
+                rho, equil_scaling, g, alpha * xk1 + (1 - alpha) * zk + uk
             )
 
             # Update u
@@ -112,8 +113,8 @@ class QSS(object):
                     0.5 * zk1 @ P @ zk1
                     + q @ zk1
                     + r
-                    + proximal.apply_g_funcs(g, rho_scaling * zk1),
-                    rho_scaling * zk1,
+                    + proximal.apply_g_funcs(g, equil_scaling * zk1),
+                    equil_scaling * zk1,
                 )
 
             xk = xk1
