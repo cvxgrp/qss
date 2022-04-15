@@ -144,7 +144,7 @@ def test_l1_trend_filtering_big():
     data["g"] = [["zero", [], [0, T]], ["abs", [], [T, 2 * T - 2]]]
     data["A"] = sp.sparse.hstack([lmda * D, -sp.sparse.identity(T - 2)])
     # solver = qss.QSS(data, eps_abs=1e-4, eps_rel=1e-5, rho=0.4)
-    solver = qss.QSS(data, eps_abs=1e-6, eps_rel=1e-6, alpha=1.8, rho=0.005)
+    solver = qss.QSS(data, eps_abs=1e-4, eps_rel=1e-4, alpha=1.8, rho=0.005)
     t0 = time.time()
     qss_result, x_qss = solver.solve()
     print("  qss:", qss_result)
