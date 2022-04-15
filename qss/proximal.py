@@ -78,7 +78,7 @@ def apply_g_funcs(g_list, x):
         func = g_funcs[func_name]
         y[start_index:end_index] = t * func(a * x[start_index:end_index] - b)
     return np.sum(y)
-    
+
 
 def apply_prox_ops(rho, equil_scaling, g_list, x):
     for g in g_list:

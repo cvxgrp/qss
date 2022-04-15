@@ -1,9 +1,9 @@
 import numpy as np
 import scipy as sp
 import qdldl
-import precondition
-import matrix_util
-import proximal
+from qss import precondition
+from qss import matrix_util
+from qss import proximal
 
 
 class QSS(object):

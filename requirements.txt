@@ -2,3 +2,4 @@ numpy
 scipy
 qdldl
 cvxpy
+matplotlib
