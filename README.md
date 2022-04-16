@@ -17,6 +17,71 @@ pip3 install ./
 ```
 
 ## Usage
+After installing `qss`, import it with
+```python
+import qss
+```
+This will expose the QSS class which is used to instantiate a solver instance. It takes the following arguments:
+```python
+solver = qss.QSS(data,
+                 eps_abs=1e-4,
+                 eps_rel=1e-4,
+                 alpha=1.4,
+                 rho=0.04,
+                 precond=True,
+                 reg=True,
+                 use_iter_refinement=True,
+                 )
+```
+Use the `solve()` method when ready to solve:
+```python
+results = solver.solve()
+```
+
+### Parameters
+- `data`: dictionary with keys `P`, `q`, `r`, `A`, `b`, and `g`. `P` and `A` should be `scipy.sparse` CSC matrices, `q` and `r` should be `numpy` arrays, `r` should be a scalar, and `g` should be a list of separable function definitions. Each separable function is declared itself as a list of the form `[func_name, [t, a, b], [start_index, end_index]]`, where `func_name` is a string specifying a valid separable function (see below for a list of supported functions), `t`, `a`, `b` are shifting and scaling parameters, and `[start_index, end_index]` specify which indices of the variable being optimized over should have this separable function applied to them. 
+- `eps_abs`: scalar specifying absolute tolerance.
+- `eps_abs`: scalar specifying relative tolerance.
+- `alpha`: scalar specifying overstep size.
+- `rho`: scalar specifying ADMM step size.
+- `precond`: boolean specifying whether to perform matrix equilibration.
+- `reg`: boolean specifying whether to regularize KKT matrix. May fail on certain problem instances if set to `False`.
+- `use_iter_refinement`: boolean, only matters if `reg` is `True`. Helps mitigate some of the accuracy loss due to regularization. 
+
+### Separable functions
+The following separable functions are supported: 
+- `"zero"`: `g(x) = 0`
+- `"abs"`: `g(x) = |x|`
+- `"indge0"`: `g(x) = I(x >= 0)`
+- `"indbox01"`: `g(x) = I(0 <= x <= 1)`
+
+The `t`, `a`, `b` parameters are used to shift and scale the above as follows: `t * g(ax - b)`.
+
+### Example
+Below is the `qss` solution to a nonnegative least squares instance, which is a problem of the form 
+`minimize 0.5 * ||Gx - h||_2^2 subject to x >= 0`.
+```python
+import numpy as np
+import scipy as sp
+import qss
+
+p = 100
+n = 500
+G = sp.sparse.random(n, p, density=0.2, format="csc")
+h = np.random.rand(n)
+
+data = {}
+data["P"] = G.T @ G
+data["q"] = -h.T @ G
+data["r"] = 0.5 * h.T @ h
+data["A"] = sp.sparse.csc_matrix((1, p)) 
+data["b"] = np.zeros(1)
+data["g"] = [["indge0", [], [0, p]]]
+
+solver = qss.QSS(data, eps_abs=1e-4, eps_rel=1e-4, rho=2)
+objective, x = solver.solve()
+print(objective)
+```
 
 ## Development
 To create a virtual environment, run
