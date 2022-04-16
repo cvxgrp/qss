@@ -21,7 +21,7 @@ After installing `qss`, import it with
 ```python
 import qss
 ```
-This will expose the QSS class which is used to instantiate a solver instance. It takes the following arguments:
+This will expose the QSS class which is used to instantiate a solver object. It takes the following arguments:
 ```python
 solver = qss.QSS(data,
                  eps_abs=1e-4,
@@ -48,6 +48,11 @@ results = solver.solve()
 - `reg`: boolean specifying whether to regularize KKT matrix. May fail on certain problem instances if set to `False`.
 - `use_iter_refinement`: boolean, only matters if `reg` is `True`. Helps mitigate some of the accuracy loss due to regularization. 
 
+### Returns
+A list containing the following:
+- `objective`: the objective value attained by the solution found by `qss`. 
+- `solution`: the solution vector.
+
 ### Separable functions
 The following separable functions are supported: 
 - `"zero"`: `g(x) = 0`
@@ -58,8 +63,11 @@ The following separable functions are supported:
 The `t`, `a`, `b` parameters are used to shift and scale the above as follows: `t * g(ax - b)`.
 
 ### Example
-Below is the `qss` solution to a nonnegative least squares instance, which is a problem of the form 
-`minimize 0.5 * ||Gx - h||_2^2 subject to x >= 0`.
+Nonnegative least squares is a problem of the form
+```
+minimize 0.5 * ||Gx - h||_2^2 subject to x >= 0
+```
+`qss` can be used to solve this problem as follows:
 ```python
 import numpy as np
 import scipy as sp
@@ -74,11 +82,11 @@ data = {}
 data["P"] = G.T @ G
 data["q"] = -h.T @ G
 data["r"] = 0.5 * h.T @ h
-data["A"] = sp.sparse.csc_matrix((1, p)) 
+data["A"] = sp.sparse.csc_matrix((1, p)) # All zeros meaning no constraints
 data["b"] = np.zeros(1)
-data["g"] = [["indge0", [], [0, p]]]
+data["g"] = [["indge0", [], [0, p]]] # Enforce x >= 0 using indicator
 
-solver = qss.QSS(data, eps_abs=1e-4, eps_rel=1e-4, rho=2)
+solver = qss.QSS(data, rho=2)
 objective, x = solver.solve()
 print(objective)
 ```
