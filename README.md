@@ -39,7 +39,7 @@ results = solver.solve()
 ```
 
 ### Parameters
-- `data`: dictionary with keys `P`, `q`, `r`, `A`, `b`, and `g`. `P` and `A` should be `scipy.sparse` CSC matrices, `q` and `r` should be `numpy` arrays, `r` should be a scalar, and `g` should be a list of separable function definitions. Each separable function is declared itself as a list of the form `[func_name, [t, a, b], [start_index, end_index]]`, where `func_name` is a string specifying a valid separable function (see below for a list of supported functions), `t`, `a`, `b` are shifting and scaling parameters, and `[start_index, end_index]` specify which indices of the variable being optimized over should have this separable function applied to them. 
+- `data`: dictionary with keys `P`, `q`, `r`, `A`, `b`, and `g`. `P` and `A` should be `scipy.sparse` CSC matrices, `q` and `r` should be `numpy` arrays, `r` should be a scalar, and `g` should be a list of separable function definitions. Each separable function is declared itself as a list of the form `[func_name, [t, a, b], [start_index, end_index]]`, where `func_name` is a string specifying a valid separable function (see below for a list of supported functions), `t`, `a`, `b` are shifting and scaling parameters, and `[start_index, end_index]` specify which indices of the variable being optimized over should have this separable function applied to them. Note that the zero function will be applied to any indices that don't have another function specified for them.
 - `eps_abs`: scalar specifying absolute tolerance.
 - `eps_abs`: scalar specifying relative tolerance.
 - `alpha`: scalar specifying overstep size.
