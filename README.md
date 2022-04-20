@@ -106,5 +106,5 @@ pip3 install -e ./ -r requirements.txt
 ```
 Finally, test to make sure the installation worked:
 ```
-python3 tests/test.py
+pytest tests/
 ```
