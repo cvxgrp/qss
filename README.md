@@ -91,7 +91,7 @@ data["q"] = -h.T @ G
 data["r"] = 0.5 * h.T @ h
 data["A"] = sp.sparse.csc_matrix((1, p)) # All zeros meaning no constraints
 data["b"] = np.zeros(1)
-data["g"] = [["indge0", [], [0, p]]] # Enforce x >= 0 using indicator
+data["g"] = [{"g": "indge0", "range": (0, p)}] # Enforce x >= 0
 
 solver = qss.QSS(data, rho=2)
 objective, x = solver.solve()
