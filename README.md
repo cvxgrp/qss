@@ -40,11 +40,11 @@ results = solver.solve()
 
 ### Parameters
 - `data`: dictionary with the following keys:
-    - `P`, `q`, `r`, `A`, `b` specify the quadratic part of the objective and the linear constraint as in the problem formulation above. `P` and `A` should be `scipy.sparse` CSC matrices, `q` and `r` should be `numpy` arrays,  and `r` should be a scalar.
-    - `g` is a list of separable function definitions. Each separable function is declared as a dictionary with the following keys:
-        - `func_name`: string that corresponds to a valid separable function name (see below for a list of supported functions).
-        - `args`: `weight` (default 1), `scale` (default 1), `shift` (default 0) allow the `g` function to be applied in a weighted manner to a shifted and scaled input. Some functions take additional arguments, see below. 
-        - `range`: tuple specifying the start index and end index that the function should be applied to.
+    - `'P'`, `'q'`, `'r'`, `'A'`, `'b'` specify the quadratic part of the objective and the linear constraint as in the problem formulation above. `'P'` and `'A'` should be `scipy.sparse` CSC matrices, `'q'` and `'r'` should be `numpy` arrays,  and `'r'` should be a scalar.
+    - `'g'` is a list of separable function definitions. Each separable function is declared as a dictionary with the following keys:
+        - `'func_name'`: string that corresponds to a valid separable function name (see below for a list of supported functions).
+        - `'args'`: `'weight'` (default 1), `'scale'` (default 1), `'shift'` (default 0) allow the `'g'` function to be applied in a weighted manner to a shifted and scaled input. Some functions take additional arguments, see below. 
+        - `'range'`: tuple specifying the start index and end index that the function should be applied to.
     
         Note that the zero function will be applied to any indices that don't have another function specified for them.
 - `eps_abs`: scalar specifying absolute tolerance.
