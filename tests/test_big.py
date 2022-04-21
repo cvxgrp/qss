@@ -29,7 +29,7 @@ def test_l1_trend_filtering_big():
     m2 = sp.sparse.eye(m=T - 2, n=T, k=1)
     m3 = sp.sparse.eye(m=T - 2, n=T, k=2)
     D = m1 - 2 * m2 + m3
-    
+
     # CVXPY
     x = cp.Variable(T)
     objective = cp.Minimize(0.5 * cp.sum_squares(y - x) + lmda * cp.norm(D @ x, 1))
@@ -37,13 +37,13 @@ def test_l1_trend_filtering_big():
     prob = cp.Problem(objective, constraints)
     t0 = time.time()
 
-    #QSS 
+    # QSS
     data = {}
     data["P"] = sp.sparse.diags(np.concatenate([np.ones(T), np.zeros(T - 2)]))
     data["q"] = -np.concatenate([y, np.zeros(T - 2)])
     data["r"] = 0.5 * y.T @ y
     data["b"] = np.zeros(T - 2)
-    data["g"] = [["zero", [], [0, T]], ["abs", [], [T, 2 * T - 2]]]
+    data["g"] = [{"g": "abs", "range": (T, 2 * T - 2)}]
     data["A"] = sp.sparse.hstack([lmda * D, -sp.sparse.identity(T - 2)])
     solver = qss.QSS(data, eps_abs=1e-4, eps_rel=1e-4, alpha=1.8, rho=0.005)
 
@@ -58,4 +58,3 @@ def test_l1_trend_filtering_big():
         0.5 * np.linalg.norm(y - qss_res[:T]) ** 2
         + lmda * np.linalg.norm(D @ qss_res[:T], ord=1)
     )
-

@@ -65,38 +65,50 @@ prox_ops = {
 def apply_g_funcs(g_list, x):
     y = np.zeros(len(x))
     for g in g_list:
-        func_name = g[0]
-        if g[1] == []:
-            t = 1
-            a = 1
-            b = 0
+        func_name = g["g"]
+        if "args" in g and "weight" in g["args"]:
+            weight = g["args"]["weight"]
         else:
-            t, a, b = g[1]
-        start_index = g[2][0]
-        end_index = g[2][1]
+            weight = 1
+        if "args" in g and "scale" in g["args"]:
+            scale = g["args"]["scale"]
+        else:
+            scale = 1
+        if "args" in g and "shift" in g["args"]:
+            shift = g["args"]["shift"]
+        else:
+            shift = 0
+        start_index, end_index = g["range"]
 
         func = g_funcs[func_name]
-        y[start_index:end_index] = t * func(a * x[start_index:end_index] - b)
+        y[start_index:end_index] = weight * func(
+            scale * x[start_index:end_index] - shift
+        )
     return np.sum(y)
 
 
 def apply_prox_ops(rho, equil_scaling, g_list, x):
     for g in g_list:
-        prox_op_name = g[0]
-        if g[1] == []:
-            t = 1
-            a = 1
-            b = 0
+        prox_op_name = g["g"]
+        if "args" in g and "weight" in g["args"]:
+            weight = g["args"]["weight"]
         else:
-            t, a, b = g[1]
-        start_index = g[2][0]
-        end_index = g[2][1]
+            weight = 1
+        if "args" in g and "scale" in g["args"]:
+            scale = g["args"]["scale"]
+        else:
+            scale = 1
+        if "args" in g and "shift" in g["args"]:
+            shift = g["args"]["shift"]
+        else:
+            shift = 0
+        start_index, end_index = g["range"]
 
-        new_a = equil_scaling[start_index:end_index] * a
-        new_rho = rho / (t * new_a**2)
+        new_scale = equil_scaling[start_index:end_index] * scale
+        new_rho = rho / (weight * new_scale**2)
 
         prox = prox_ops[prox_op_name]
         x[start_index:end_index] = (
-            prox(new_rho, new_a * x[start_index:end_index] - b) + b
-        ) / new_a
+            prox(new_rho, new_scale * x[start_index:end_index] - shift) + shift
+        ) / new_scale
     return x

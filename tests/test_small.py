@@ -4,6 +4,7 @@ import scipy as sp
 import qss
 import pytest
 
+
 def test_nonneg_ls():
     np.random.seed(1234)
     p = 100
@@ -17,7 +18,7 @@ def test_nonneg_ls():
     data["r"] = 0.5 * h.T @ h
     data["A"] = np.zeros((1, p))
     data["b"] = np.zeros(1)
-    data["g"] = [["indge0", [], [0, p]]]
+    data["g"] = [{"g": "indge0", "args": {}, "range": (0, p)}]
 
     data["P"] = sp.sparse.csc_matrix(data["P"])
     data["A"] = sp.sparse.csc_matrix(data["A"])
@@ -32,7 +33,7 @@ def test_nonneg_ls():
     solver = qss.QSS(data, eps_abs=1e-4, eps_rel=1e-4, rho=2)
 
     assert prob.solve() == pytest.approx(solver.solve()[0], rel=1e-2)
-    
+
 
 def test_l1_trend_filtering():
     np.random.seed(1234)
@@ -45,7 +46,7 @@ def test_l1_trend_filtering():
     data["q"] = -np.concatenate([y, np.zeros(dim - 2)])
     data["r"] = 0.5 * y.T @ y
     data["b"] = np.zeros(dim - 2)
-    data["g"] = [["zero", [], [0, dim]], ["abs", [], [dim, 2 * dim - 2]]]
+    data["g"] = [{"g": "abs", "range": (dim, 2 * dim - 2)}]
 
     m1 = sp.sparse.eye(m=dim - 2, n=dim, k=0)
     m2 = sp.sparse.eye(m=dim - 2, n=dim, k=1)
@@ -123,7 +124,13 @@ def test_quadratic_control():
     )
     data["A"] = constr_mat
     data["b"] = np.concatenate([xinit, np.zeros(n * T)])
-    data["g"] = [["indbox01", [1, 0.5, -0.5], [n * (T + 1), n * (T + 1) + m * (T + 1)]]]
+    data["g"] = [
+        {
+            "g": "indbox01",
+            "args": {"weight": 1, "scale": 0.5, "shift": -0.5},
+            "range": (n * (T + 1), n * (T + 1) + m * (T + 1)),
+        }
+    ]
 
     solver = qss.QSS(data, eps_abs=1e-4, eps_rel=1e-4, rho=0.4)
 

@@ -51,8 +51,7 @@ def test_nonneg_ls():
     data["r"] = 0.5 * h.T @ h
     data["A"] = np.zeros((1, p))
     data["b"] = np.zeros(1)
-    # data["g"] = 2 * np.ones(p)
-    data["g"] = [["indge0", [], [0, p]]]
+    data["g"] = [{"g": "indge0", "args": {}, "range": (0, p)}]
 
     data["P"] = sp.sparse.csc_matrix(data["P"])
     data["A"] = sp.sparse.csc_matrix(data["A"])
@@ -81,8 +80,7 @@ def test_l1_trend_filtering():
     data["q"] = -np.concatenate([y, np.zeros(dim - 2)])
     data["r"] = 0.5 * y.T @ y
     data["b"] = np.zeros(dim - 2)
-    # data["g"] = np.concatenate([np.zeros(dim), np.ones(dim - 2)])
-    data["g"] = [["zero", [], [0, dim]], ["abs", [], [dim, 2 * dim - 2]]]
+    data["g"] = [{"g": "abs", "range": (dim, 2 * dim - 2)}]
 
     m1 = sp.sparse.eye(m=dim - 2, n=dim, k=0)
     m2 = sp.sparse.eye(m=dim - 2, n=dim, k=1)
@@ -141,8 +139,7 @@ def test_l1_trend_filtering_big():
     data["q"] = -np.concatenate([y, np.zeros(T - 2)])
     data["r"] = 0.5 * y.T @ y
     data["b"] = np.zeros(T - 2)
-    # data["g"] = np.concatenate([np.zeros(T), np.ones(T - 2)])
-    data["g"] = [["zero", [], [0, T]], ["abs", [], [T, 2 * T - 2]]]
+    data["g"] = [{"g": "abs", "range": (T, 2 * T - 2)}]
     data["A"] = sp.sparse.hstack([lmda * D, -sp.sparse.identity(T - 2)])
     # solver = qss.QSS(data, eps_abs=1e-4, eps_rel=1e-5, rho=0.4)
     solver = qss.QSS(data, eps_abs=1e-4, eps_rel=1e-4, alpha=1.8, rho=0.005)
@@ -220,8 +217,13 @@ def test_quadratic_control():
     )
     data["A"] = constr_mat
     data["b"] = np.concatenate([xinit, np.zeros(n * T)])
-    # data["g"] = np.zeros(n * (T + 1) + m * (T + 1))
-    data["g"] = [["indbox01", [1, 0.5, -0.5], [n * (T + 1), n * (T + 1) + m * (T + 1)]]]
+    data["g"] = [
+        {
+            "g": "indbox01",
+            "args": {"weight": 1, "scale": 0.5, "shift": -0.5},
+            "range": (n * (T + 1), n * (T + 1) + m * (T + 1)),
+        }
+    ]
 
     solver = qss.QSS(data, eps_abs=1e-4, eps_rel=1e-4, rho=0.4)
     qss_result, x_qss = solver.solve()

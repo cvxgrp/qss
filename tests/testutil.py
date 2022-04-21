@@ -1,8 +1,9 @@
 import numpy as np
 import cvxpy as cp
 import scipy as sp
-import time 
+import time
 import qss
+
 
 def compare_qss_cvxpy(cp_prob, qss_solver):
     print("Comparing CVXPY to QSS.")
