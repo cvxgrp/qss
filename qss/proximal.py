@@ -52,13 +52,33 @@ def prox_indbox01(rho, v):
     return v
 
 
-g_funcs = {"zero": g_zero, "abs": g_abs, "indge0": g_indge0, "indbox01": g_indbox01}
+# f(x) = I(x == 0)
+def g_is_zero(v):
+    valid = np.all(v == 0)
+    if valid:
+        return 0
+    else:
+        return np.inf
+
+
+def prox_is_zero(rho, v):
+    return np.zeros(len(v))
+
+
+g_funcs = {
+    "zero": g_zero,
+    "abs": g_abs,
+    "indge0": g_indge0,
+    "indbox01": g_indbox01,
+    "is_zero": g_is_zero,
+}
 
 prox_ops = {
     "zero": prox_zero,
     "abs": prox_abs,
     "indge0": prox_indge0,
     "indbox01": prox_indbox01,
+    "is_zero": prox_is_zero,
 }
 
 

@@ -67,6 +67,38 @@ def test_l1_trend_filtering():
     assert prob.solve() == pytest.approx(solver.solve()[0], rel=1e-2)
 
 
+def test_lp():
+    np.random.seed(1234)
+    dim = 100
+    constr_dim = 30
+
+    c = 10 * np.random.rand(dim)
+    A = sp.sparse.random(constr_dim, dim, density=0.1, format="csc")
+    b = np.random.rand(constr_dim)
+
+    data = {}
+    data["P"] = sp.sparse.csc_matrix((dim+constr_dim, dim+constr_dim))
+    data["q"] = np.concatenate([c, np.zeros(constr_dim)])
+    data["r"] = 0
+    data["A"] = sp.sparse.hstack([A, -sp.sparse.eye(constr_dim)])
+    data["b"] = b
+    data["g"] = [
+        {"g": "indge0", "range": (0, dim)},
+        {"g": "indge0", "args": {"scale": -1}, "range": (dim, dim + constr_dim)},
+    ]
+
+    # CVXPY
+    x = cp.Variable(dim)
+    objective = cp.Minimize(c @ x)
+    constraints = [A @ x <= b, x >= 0]
+    prob = cp.Problem(objective, constraints)
+
+    # QSS
+    solver = qss.QSS(data, rho=30)
+
+    assert prob.solve() == pytest.approx(solver.solve()[0], rel=1e-2)
+
+
 def test_quadratic_control():
     np.random.seed(1234)
     n = 5

@@ -7,40 +7,60 @@ def ruiz(P, q, r, A, b):
     constr_dim = A.shape[0]
     eps_equil = 1e-4
 
-    if A.nnz != 0:
-        M = sp.sparse.vstack(
-            [
-                sp.sparse.hstack([P, A.T]),
-                sp.sparse.hstack([A, sp.sparse.csc_matrix((constr_dim, constr_dim))]),
-            ]
-        )
-        qb = np.concatenate([q, b])
-    else:
-        constr_dim = 0
-        M = P
-        qb = q
-
     c = 1
-    S = sp.sparse.identity(dim + constr_dim)
-    delta = np.zeros(dim + constr_dim)
+    S1 = sp.sparse.identity(dim)
+    S2 = sp.sparse.identity(constr_dim)
+    delta1 = np.zeros(dim)
+    delta2 = np.zeros(constr_dim)
+    Pbar = P
+    qbar = q
+    Abar = A
+    bbar = b
+    rbar = r
 
-    while np.linalg.norm(1 - delta, ord=np.inf) > eps_equil:
-        norm_sqrt = np.sqrt(sp.sparse.linalg.norm(M, ord=np.inf, axis=0))
-        norm_sqrt[norm_sqrt == 0] = 1  # do this to prevent divide by zero
-        delta = 1 / norm_sqrt
-        Delta = sp.sparse.diags(delta)
-        M = Delta @ M @ Delta
-        qb = Delta @ qb
-        S = sp.sparse.diags(delta) @ S
+    while (
+        np.linalg.norm(1 - delta1, ord=np.inf) > eps_equil
+        and np.linalg.norm(1 - delta2, ord=np.inf) > eps_equil
+    ):
+        Pbarnorm = np.sqrt(sp.sparse.linalg.norm(Pbar, ord=np.inf, axis=0))
+        Abarnorm = np.sqrt(sp.sparse.linalg.norm(Abar, ord=np.inf, axis=0))
+        ATbarnorm = np.sqrt(sp.sparse.linalg.norm(Abar, ord=np.inf, axis=1))
 
-    if A.nnz != 0:
-        return (
-            M[:dim, :dim],
-            qb[:dim],
-            r,
-            M[dim:, :dim],
-            qb[dim:],
-            S.diagonal()[:dim],
+        Pbarnorm[Pbarnorm == 0] = 1
+        Abarnorm[Abarnorm == 0] = 1
+        ATbarnorm[ATbarnorm == 0] = 1
+
+        delta1 = 1 / np.maximum(Pbarnorm, Abarnorm)
+        delta2 = 1 / ATbarnorm
+
+        Delta1 = sp.sparse.diags(delta1)
+        Delta2 = sp.sparse.diags(delta2)
+
+        Pbar = Delta1 @ Pbar @ Delta1
+        Abar = Delta2 @ Abar @ Delta1
+        qbar = Delta1 @ qbar
+        bbar = Delta2 @ bbar
+
+        gamma = 1 / max(
+            np.mean(sp.sparse.linalg.norm(Pbar, ord=np.inf, axis=0)),
+            np.linalg.norm(q, ord=np.inf),
         )
-    else:
-        return M, qb, r, A, b, S.diagonal()
+
+        Pbar *= gamma
+        qbar *= gamma
+        rbar *= gamma
+
+        S1 = Delta1 @ S1
+        S2 = Delta2 @ S2
+
+        c *= gamma
+
+    return (
+            Pbar,
+            qbar,
+            rbar,
+            Abar,
+            bbar,
+            S1.diagonal(),
+            c
+        )
