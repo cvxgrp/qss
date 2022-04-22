@@ -77,7 +77,7 @@ def test_lp():
     b = np.random.rand(constr_dim)
 
     data = {}
-    data["P"] = sp.sparse.csc_matrix((dim+constr_dim, dim+constr_dim))
+    data["P"] = sp.sparse.csc_matrix((dim + constr_dim, dim + constr_dim))
     data["q"] = np.concatenate([c, np.zeros(constr_dim)])
     data["r"] = 0
     data["A"] = sp.sparse.hstack([A, -sp.sparse.eye(constr_dim)])

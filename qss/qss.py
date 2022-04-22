@@ -111,9 +111,7 @@ class QSS(object):
             ):
                 print("Finished in", i, "iterations")
                 return (
-                    (0.5 * zk1 @ P @ zk1
-                    + q @ zk1
-                    + r)/c
+                    (0.5 * zk1 @ P @ zk1 + q @ zk1 + r) / c
                     + proximal.apply_g_funcs(g, equil_scaling * zk1),
                     equil_scaling * zk1,
                 )
