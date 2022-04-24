@@ -58,3 +58,35 @@ def test_l1_trend_filtering_big():
         0.5 * np.linalg.norm(y - qss_res[:T]) ** 2
         + lmda * np.linalg.norm(D @ qss_res[:T], ord=1)
     )
+
+
+def test_lp_big():
+    np.random.seed(1234)
+    dim = 100
+    constr_dim = 50
+
+    c = 10 * np.random.rand(dim)
+    A = 5 * sp.sparse.random(constr_dim, dim, density=0.1, format="csc")
+    b = 2 * (np.random.rand(constr_dim) - 0.4)
+
+    data = {}
+    data["P"] = sp.sparse.csc_matrix((dim + constr_dim, dim + constr_dim))
+    data["q"] = np.concatenate([c, np.zeros(constr_dim)])
+    data["r"] = 0
+    data["A"] = sp.sparse.hstack([A, -sp.sparse.eye(constr_dim)])
+    data["b"] = b
+    data["g"] = [
+        {"g": "indge0", "range": (0, dim)},
+        {"g": "indge0", "args": {"scale": -1}, "range": (dim, dim + constr_dim)},
+    ]
+
+    # CVXPY
+    x = cp.Variable(dim)
+    objective = cp.Minimize(c @ x)
+    constraints = [A @ x <= b, x >= 0]
+    prob = cp.Problem(objective, constraints)
+
+    # QSS
+    solver = qss.QSS(data, rho=30)
+
+    qss_res = testutil.compare_qss_cvxpy(prob, solver)

@@ -55,12 +55,4 @@ def ruiz(P, q, r, A, b):
 
         c *= gamma
 
-    return (
-            Pbar,
-            qbar,
-            rbar,
-            Abar,
-            bbar,
-            S1.diagonal(),
-            c
-        )
+    return (Pbar, qbar, rbar, Abar, bbar, S1.diagonal(), c)
