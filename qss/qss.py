@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 import qdldl
 from qss import precondition
-from qss import matrix_util
+from qss import matrix
 from qss import proximal
 
 
@@ -76,8 +76,8 @@ class QSS(object):
 
         # Constructing KKT matrix
         if has_constr:
-            quad_kkt = matrix_util.build_kkt(P, A, 0, rho, dim, constr_dim)
-            quad_kkt_reg = matrix_util.build_kkt(P, A, -1e-7, rho, dim, constr_dim)
+            quad_kkt = matrix.build_kkt(P, A, 0, rho, dim, constr_dim)
+            quad_kkt_reg = matrix.build_kkt(P, A, -1e-7, rho, dim, constr_dim)
             F = qdldl.Solver(quad_kkt_reg)
         else:
             quad_kkt = P + rho * sp.sparse.identity(dim)
@@ -90,7 +90,7 @@ class QSS(object):
             # Update x
             if has_constr:
                 if self._use_iter_refinement:
-                    xk1 = matrix_util.ir_solve(
+                    xk1 = matrix.ir_solve(
                         quad_kkt, F, np.concatenate([-q + rho * (zk - uk), b])
                     )[:dim]
                 else:
