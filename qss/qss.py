@@ -101,7 +101,7 @@ class QSS(object):
             r_dual = rho * (zk - zk1)
 
             # Check if we should stop
-            if i % 100 == 0 and util.evaluate_stop_crit(
+            if i % 10 == 0 and util.evaluate_stop_crit(
                 xk1, zk, zk1, uk1, dim, rho, self._eps_abs, self._eps_rel
             ):
                 print("Finished in", i, "iterations")
