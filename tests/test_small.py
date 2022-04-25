@@ -30,7 +30,7 @@ def test_nonneg_ls():
     prob = cp.Problem(objective, constraints)
 
     # QSS
-    solver = qss.QSS(data, eps_abs=1e-4, eps_rel=1e-4, rho=2)
+    solver = qss.QSS(data, eps_abs=1e-4, eps_rel=1e-4)
 
     assert prob.solve() == pytest.approx(solver.solve()[0], rel=1e-2)
 
@@ -62,7 +62,7 @@ def test_l1_trend_filtering():
     prob = cp.Problem(objective, constraints)
 
     # QSS
-    solver = qss.QSS(data, rho=10)
+    solver = qss.QSS(data)
 
     assert prob.solve() == pytest.approx(solver.solve()[0], rel=1e-2)
 
@@ -94,7 +94,7 @@ def test_lp():
     prob = cp.Problem(objective, constraints)
 
     # QSS
-    solver = qss.QSS(data, rho=30)
+    solver = qss.QSS(data)
 
     assert prob.solve() == pytest.approx(solver.solve()[0], rel=1e-2)
 
@@ -164,6 +164,6 @@ def test_quadratic_control():
         }
     ]
 
-    solver = qss.QSS(data, eps_abs=1e-4, eps_rel=1e-4, rho=0.4)
+    solver = qss.QSS(data, eps_abs=1e-4, eps_rel=1e-4)
 
     assert prob.solve() == pytest.approx(solver.solve()[0], rel=1e-2)

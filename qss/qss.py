@@ -4,6 +4,7 @@ import qdldl
 from qss import precondition
 from qss import matrix
 from qss import proximal
+from qss import util
 
 
 class QSS(object):
@@ -13,7 +14,7 @@ class QSS(object):
         eps_abs=1e-4,
         eps_rel=1e-4,
         alpha=1.4,
-        rho=0.04,
+        rho=0.1,
         precond=True,
         reg=True,
         use_iter_refinement=True,
@@ -27,19 +28,6 @@ class QSS(object):
         self._reg = reg
         self._use_iter_refinement = use_iter_refinement
         return
-
-    def evaluate_stop_crit(self, xk, xk1, zk, zk1, uk, uk1, dim, rho):
-        epri = np.sqrt(dim) * self._eps_abs + self._eps_rel * max(
-            np.linalg.norm(xk1), np.linalg.norm(zk1)
-        )
-        edual = np.sqrt(dim) * self._eps_abs + self._eps_rel * np.linalg.norm(rho * uk1)
-        if (
-            np.linalg.norm(xk1 - zk1) < epri
-            and np.linalg.norm(rho * (zk - zk1)) < edual
-        ):
-            return True
-
-        return False
 
     def solve(self):
         P = self._data["P"]
@@ -57,6 +45,8 @@ class QSS(object):
         dim = P.shape[0]
         constr_dim = A.shape[0]
         has_constr = True if A.nnz != 0 else False
+        if not has_constr:
+            constr_dim = 0
 
         xk = np.zeros(dim)
         zk = np.zeros(dim)
@@ -106,8 +96,13 @@ class QSS(object):
             # Update u
             uk1 = uk + alpha * xk1 + (1 - alpha) * zk - zk1
 
-            if i % 100 == 0 and self.evaluate_stop_crit(
-                xk, xk1, zk, zk1, uk, uk1, dim, rho
+            # Calculate residuals
+            r_prim = xk1 - zk1
+            r_dual = rho * (zk - zk1)
+
+            # Check if we should stop
+            if i % 100 == 0 and util.evaluate_stop_crit(
+                xk1, zk, zk1, uk1, dim, rho, self._eps_abs, self._eps_rel
             ):
                 print("Finished in", i, "iterations")
                 return (
@@ -115,6 +110,43 @@ class QSS(object):
                     + proximal.apply_g_funcs(g, equil_scaling * zk1),
                     equil_scaling * zk1,
                 )
+
+            # Update rho
+            if i % 10 == 0:
+                new_rho_candidate = rho * np.sqrt(
+                    np.linalg.norm(r_prim, ord=np.inf)
+                    / np.linalg.norm(r_dual, ord=np.inf)
+                    * np.linalg.norm(rho * uk1)
+                    / max(
+                        np.linalg.norm(xk1, ord=np.inf), np.linalg.norm(zk1, ord=np.inf)
+                    )
+                )
+
+                # This is for the first iteration
+                if new_rho_candidate == 0:
+                    new_rho_candidate = rho
+
+                if new_rho_candidate / rho > 5 or rho / new_rho_candidate > 5:
+                    # print("CHANGING RHO from", rho, "TO", new_rho_candidate)
+                    uk1 = uk1 * rho / new_rho_candidate
+
+                    # Update KKT matrix
+                    rho_vec = sp.sparse.diags(
+                        np.concatenate([rho * np.ones(dim), np.zeros(constr_dim)])
+                    )
+                    new_rho_vec = sp.sparse.diags(
+                        np.concatenate(
+                            [new_rho_candidate * np.ones(dim), np.zeros(constr_dim)]
+                        )
+                    )
+                    quad_kkt = quad_kkt - rho_vec + new_rho_vec
+                    if has_constr:
+                        quad_kkt_reg = quad_kkt_reg - rho_vec + new_rho_vec
+                        F.update(quad_kkt_reg)
+                    else:
+                        F.update(quad_kkt)
+
+                    rho = new_rho_candidate
 
             xk = xk1
             zk = zk1

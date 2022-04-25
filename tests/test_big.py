@@ -63,11 +63,11 @@ def test_l1_trend_filtering_big():
 def test_lp_big():
     np.random.seed(1234)
     dim = 100
-    constr_dim = 50
+    constr_dim = 30
 
-    c = 10 * np.random.rand(dim)
-    A = 5 * sp.sparse.random(constr_dim, dim, density=0.1, format="csc")
-    b = 2 * (np.random.rand(constr_dim) - 0.4)
+    c = 10 * (np.random.rand(dim) - 0.3)
+    A = sp.sparse.random(constr_dim, dim, density=0.1, format="csc")
+    b = 2 * np.random.rand(constr_dim)
 
     data = {}
     data["P"] = sp.sparse.csc_matrix((dim + constr_dim, dim + constr_dim))
@@ -87,6 +87,6 @@ def test_lp_big():
     prob = cp.Problem(objective, constraints)
 
     # QSS
-    solver = qss.QSS(data, rho=30)
+    solver = qss.QSS(data)
 
     qss_res = testutil.compare_qss_cvxpy(prob, solver)
