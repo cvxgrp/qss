@@ -1,3 +1,4 @@
+from tracemalloc import start
 import numpy as np
 
 # Separable functions // proximal operator:
@@ -132,3 +133,25 @@ def apply_prox_ops(rho, equil_scaling, g_list, x):
             prox(new_rho, new_scale * x[start_index:end_index] - shift) + shift
         ) / new_scale
     return x
+
+
+def get_subdifferential(g_list, x, target):
+    output = np.zeros(len(x))
+    for g in g_list:
+        func_name = g["g"]
+        start_index, end_index = g["range"]
+        if func_name == "abs":
+            for i in range(start_index, end_index):
+                if x[i] == 0:
+                    if target[i] > 1:
+                        output[i] = -1
+                    elif target[i] < -1:
+                        output[i] = 1
+                    else:
+                        output[i] = -target[i]
+                elif x[i] > 0:
+                    output[i] = 1
+                elif x[i] < 0:
+                    output[i] = -1
+    # print(output)
+    return output

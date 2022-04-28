@@ -51,13 +51,24 @@ class QSS(object):
         xk = np.zeros(dim)
         zk = np.zeros(dim)
         uk = np.zeros(dim)
+        nuk = np.zeros(constr_dim)
 
         xk1 = np.zeros(dim)
         zk1 = np.zeros(dim)
         uk1 = np.zeros(dim)
+        nuk1 = np.zeros(constr_dim)
 
         equil_scaling = np.ones(dim)
         c = 1
+
+        # Polishing variables
+        # Primal residuals are ||Ax - b||_2^2
+        # Dual residuals are ||Px + q + A^T \nu + ∂g(x)||_2^2
+        primal_residuals = np.array([])
+        dual_residuals = np.array([])
+        admm_dual_residuals = np.array([])
+        opt_dual_residuals = np.array([])
+        objective_vals = np.array([])
 
         # Scaling
         if self._precond:
@@ -80,11 +91,16 @@ class QSS(object):
             # Update x
             if has_constr:
                 if self._use_iter_refinement:
-                    xk1 = matrix.ir_solve(
+                    kkt_solve = matrix.ir_solve(
                         quad_kkt, F, np.concatenate([-q + rho * (zk - uk), b])
-                    )[:dim]
+                    )
+                    xk1 = kkt_solve[:dim]
+                    nuk1 = kkt_solve[dim:]
                 else:
-                    xk1 = F.solve(np.concatenate([-q + rho * (zk - uk), b]))[:dim]
+                    kkt_solve = F.solve(np.concatenate([-q + rho * (zk - uk), b]))
+                    xk1 = kkt_solve[:dim]
+                    nuk1 = kkt_solve[dim:]
+
             else:
                 xk1 = F.solve(-q + rho * (zk - uk))
 
@@ -109,7 +125,43 @@ class QSS(object):
                     (0.5 * zk1 @ P @ zk1 + q @ zk1 + r) / c
                     + proximal.apply_g_funcs(g, equil_scaling * zk1),
                     equil_scaling * zk1,
+                    primal_residuals,
+                    dual_residuals,
+                    admm_dual_residuals,
+                    opt_dual_residuals,
+                    objective_vals,
                 )
+
+            primal_residuals = np.append(primal_residuals, np.linalg.norm(A @ xk1 - b))
+
+            dual_residuals = np.append(
+                dual_residuals,
+                np.linalg.norm(
+                    P @ xk1
+                    + q
+                    + A.T @ nuk1
+                    + rho * uk1
+                    #+ rho * (alpha * xk1 + (1 - alpha) * zk + uk - zk1)
+                ),
+            )
+
+            admm_dual_residuals = np.append(
+                admm_dual_residuals, np.linalg.norm(rho * (zk - zk1))
+            )
+
+            opt_subgrads = proximal.get_subdifferential(
+                g, zk1, P @ xk1 + q + A.T @ nuk1
+            )
+            opt_dual_residuals = np.append(
+                opt_dual_residuals,
+                np.linalg.norm(P @ xk1 + q + A.T @ nuk1 + opt_subgrads),
+            )
+
+            objective_vals = np.append(
+                objective_vals,
+                (0.5 * zk1 @ P @ zk1 + q @ zk1 + r) / c
+                + proximal.apply_g_funcs(g, equil_scaling * zk1),
+            )
 
             # Update rho
             if i % 10 == 0:
@@ -127,7 +179,14 @@ class QSS(object):
                     new_rho_candidate = rho
 
                 if new_rho_candidate / rho > 5 or rho / new_rho_candidate > 5:
-                    # print("CHANGING RHO from", rho, "TO", new_rho_candidate)
+                    print(
+                        "CHANGING RHO from",
+                        rho,
+                        "TO",
+                        new_rho_candidate,
+                        "at iteration",
+                        i,
+                    )
                     uk1 = uk1 * rho / new_rho_candidate
 
                     # Update KKT matrix
