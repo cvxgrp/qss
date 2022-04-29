@@ -103,9 +103,12 @@ class QSS(object):
             r_dual = rho * (zk - zk1)
 
             # Check if we should stop
-            if i == self._max_iter or (i % 10 == 0 and util.evaluate_stop_crit(
-                xk1, zk, zk1, uk1, dim, rho, self._eps_abs, self._eps_rel
-            )):
+            if i == self._max_iter or (
+                i % 10 == 0
+                and util.evaluate_stop_crit(
+                    xk1, zk, zk1, uk1, dim, rho, self._eps_abs, self._eps_rel
+                )
+            ):
                 print("Finished in", i, "iterations")
                 return (
                     (0.5 * zk1 @ P @ zk1 + q @ zk1 + r) / c
@@ -115,12 +118,17 @@ class QSS(object):
 
             # Update rho
             if i % 10 == 0:
+                # Add 1e-30 to denominators to avoid divide by zero
                 new_rho_candidate = rho * np.sqrt(
                     np.linalg.norm(r_prim, ord=np.inf)
-                    / np.linalg.norm(r_dual, ord=np.inf)
+                    / (np.linalg.norm(r_dual, ord=np.inf) + 1e-30)
                     * np.linalg.norm(rho * uk1)
-                    / max(
-                        np.linalg.norm(xk1, ord=np.inf), np.linalg.norm(zk1, ord=np.inf)
+                    / (
+                        max(
+                            np.linalg.norm(xk1, ord=np.inf),
+                            np.linalg.norm(zk1, ord=np.inf),
+                        )
+                        + 1e-30
                     )
                 )
 

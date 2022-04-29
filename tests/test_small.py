@@ -35,6 +35,31 @@ def test_nonneg_ls():
     assert prob.solve() == pytest.approx(solver.solve()[0], rel=1e-2)
 
 
+def test_l0_ls():
+    np.random.seed(1234)
+    p = 100
+    n = 500
+    G = np.random.rand(n, p)
+    h = np.random.rand(n)
+
+    data = {}
+    data["P"] = G.T @ G
+    data["q"] = -h.T @ G
+    data["r"] = 0.5 * h.T @ h
+    data["A"] = np.zeros((1, p))
+    data["b"] = np.zeros(1)
+    data["g"] = [{"g": "card", "args": {"weight": 0.1}, "range": (0, p)}]
+
+    data["P"] = sp.sparse.csc_matrix(data["P"])
+    data["A"] = sp.sparse.csc_matrix(data["A"])
+
+    solver = qss.QSS(data, max_iter=1000)
+    qss_result, x_qss = solver.solve()
+
+    # Regression test as CVXPY can't solve this problem
+    assert pytest.approx(qss_result, rel=1e-2) == 328.2067655590608
+
+
 def test_l1_trend_filtering():
     np.random.seed(1234)
     dim = 5000

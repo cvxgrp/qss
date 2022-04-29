@@ -65,12 +65,22 @@ def prox_is_zero(rho, v):
     return np.zeros(len(v))
 
 
+def g_card(v):
+    return np.count_nonzero(v)
+
+
+def prox_card(rho, v):
+    v[v < np.sqrt(2 / rho)] = 0
+    return v
+
+
 g_funcs = {
     "zero": g_zero,
     "abs": g_abs,
     "indge0": g_indge0,
     "indbox01": g_indbox01,
     "is_zero": g_is_zero,
+    "card": g_card,
 }
 
 prox_ops = {
@@ -79,6 +89,7 @@ prox_ops = {
     "indge0": prox_indge0,
     "indbox01": prox_indbox01,
     "is_zero": prox_is_zero,
+    "card": prox_card,
 }
 
 
