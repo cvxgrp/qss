@@ -15,6 +15,7 @@ class QSS(object):
         eps_rel=1e-4,
         alpha=1.4,
         rho=0.1,
+        max_iter=np.inf,
         precond=True,
         reg=True,
         use_iter_refinement=True,
@@ -24,6 +25,7 @@ class QSS(object):
         self._eps_rel = eps_rel
         self._alpha = alpha
         self._rho = rho
+        self._max_iter = max_iter
         self._precond = precond
         self._reg = reg
         self._use_iter_refinement = use_iter_refinement
@@ -101,9 +103,9 @@ class QSS(object):
             r_dual = rho * (zk - zk1)
 
             # Check if we should stop
-            if i % 10 == 0 and util.evaluate_stop_crit(
+            if i == self._max_iter or (i % 10 == 0 and util.evaluate_stop_crit(
                 xk1, zk, zk1, uk1, dim, rho, self._eps_abs, self._eps_rel
-            ):
+            )):
                 print("Finished in", i, "iterations")
                 return (
                     (0.5 * zk1 @ P @ zk1 + q @ zk1 + r) / c
