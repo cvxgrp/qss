@@ -64,7 +64,7 @@ def g_is_zero(v):
 def prox_is_zero(rho, v):
     return np.zeros(len(v))
 
-
+# f(x) = {0 if x == 0, 1 else}
 def g_card(v):
     return np.count_nonzero(v)
 
