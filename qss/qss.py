@@ -4,6 +4,7 @@ import qdldl
 from qss import precondition
 from qss import matrix
 from qss import proximal
+from qss import polish
 from qss import util
 
 
@@ -19,6 +20,7 @@ class QSS(object):
         precond=True,
         reg=True,
         use_iter_refinement=True,
+        polish=False,
     ):
         self._data = data
         self._eps_abs = eps_abs
@@ -29,6 +31,7 @@ class QSS(object):
         self._precond = precond
         self._reg = reg
         self._use_iter_refinement = use_iter_refinement
+        self._polish = polish
         return
 
     def solve(self):
@@ -39,8 +42,6 @@ class QSS(object):
         b = self._data["b"]
         g = self._data["g"]
 
-        eps_abs = self._eps_abs
-        eps_rel = self._eps_rel
         alpha = self._alpha
         rho = self._rho
 
@@ -57,14 +58,15 @@ class QSS(object):
         xk1 = np.zeros(dim)
         zk1 = np.zeros(dim)
         uk1 = np.zeros(dim)
+        nuk1 = np.zeros(dim)
 
         equil_scaling = np.ones(dim)
-        c = 1
+        obj_scale = 1
 
         # Scaling
         if self._precond:
             # We are now solving for xtilde, where x = equil_scaling * xtilde
-            P, q, r, A, b, equil_scaling, c = precondition.ruiz(P, q, r, A, b)
+            P, q, r, A, b, equil_scaling, obj_scale = precondition.ruiz(P, q, r, A, b)
 
         # Constructing KKT matrix
         if has_constr:
@@ -82,17 +84,21 @@ class QSS(object):
             # Update x
             if has_constr:
                 if self._use_iter_refinement:
-                    xk1 = matrix.ir_solve(
+                    kkt_solve = matrix.ir_solve(
                         quad_kkt, F, np.concatenate([-q + rho * (zk - uk), b])
-                    )[:dim]
+                    )
+                    xk1 = kkt_solve[:dim]
+                    nuk1 = kkt_solve[dim:]
                 else:
-                    xk1 = F.solve(np.concatenate([-q + rho * (zk - uk), b]))[:dim]
+                    kkt_solve = F.solve(np.concatenate([-q + rho * (zk - uk), b]))
+                    xk1 = kkt_solve[:dim]
+                    nuk1 = kkt_solve[dim:]
             else:
                 xk1 = F.solve(-q + rho * (zk - uk))
 
             # Update z
             zk1 = proximal.apply_prox_ops(
-                rho / c, equil_scaling, g, alpha * xk1 + (1 - alpha) * zk + uk
+                rho / obj_scale, equil_scaling, g, alpha * xk1 + (1 - alpha) * zk + uk
             )
 
             # Update u
@@ -110,8 +116,13 @@ class QSS(object):
                 )
             ):
                 print("Finished in", i, "iterations")
+
+                # Polishing
+                if self._polish:
+                    zk1 = polish.polish(g, zk1, P, q, A, nuk1, dim)
+
                 return (
-                    (0.5 * zk1 @ P @ zk1 + q @ zk1 + r) / c
+                    (0.5 * zk1 @ P @ zk1 + q @ zk1 + r) / obj_scale
                     + proximal.apply_g_funcs(g, equil_scaling * zk1),
                     equil_scaling * zk1,
                 )

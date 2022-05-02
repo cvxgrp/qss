@@ -13,6 +13,10 @@ def prox_zero(rho, v):
     return v
 
 
+def subdiff_zero(v):
+    return np.zeros(len(v))
+
+
 # f(x) = |x|
 def g_abs(v):
     return np.abs(v)
@@ -20,6 +24,21 @@ def g_abs(v):
 
 def prox_abs(rho, v):
     return np.maximum(v - 1 / rho, 0) - np.maximum(-v - 1 / rho, 0)
+
+
+def subdiff_abs(v):
+    c = np.zeros(len(v))
+    r = np.zeros(len(v))
+
+    c[v < 0] = -1
+    c[v > 0] = 1
+    c[v == 0] = 0
+
+    r[v < 0] = 0
+    r[v > 0] = 0
+    r[v == 0] = 1
+
+    return c, r
 
 
 # f(x) = I(x >= 0)
@@ -64,6 +83,7 @@ def g_is_zero(v):
 def prox_is_zero(rho, v):
     return np.zeros(len(v))
 
+
 # f(x) = {0 if x == 0, 1 else}
 def g_card(v):
     return np.count_nonzero(v)
@@ -90,6 +110,11 @@ prox_ops = {
     "indbox01": prox_indbox01,
     "is_zero": prox_is_zero,
     "card": prox_card,
+}
+
+subdiffs = {
+    "zero": subdiff_zero,
+    "abs": subdiff_abs,
 }
 
 
@@ -143,3 +168,19 @@ def apply_prox_ops(rho, equil_scaling, g_list, x):
             prox(new_rho, new_scale * x[start_index:end_index] - shift) + shift
         ) / new_scale
     return x
+
+
+def get_subdiff(g_list, x):
+    c = np.zeros(len(x))
+    r = np.zeros(len(x))
+    for g in g_list:
+        func_name = g["g"]
+        # TODO: Shifting, scaling
+        start_index, end_index = g["range"]
+
+        subdiff_func = subdiffs[func_name]
+        g_c, g_r = subdiff_func(x[start_index:end_index])
+        c[start_index:end_index] = g_c
+        r[start_index:end_index] = g_r
+
+    return c, r
