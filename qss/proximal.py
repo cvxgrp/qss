@@ -108,12 +108,10 @@ def prox_quantile(rho, v, args):
         tau = args["tau"]
     else:
         tau = 1
-    output = np.zeros(len(v))
-    upper_thresh = v - tau / rho > 0
-    lower_thresh = v + (1 + tau) / rho < 0
-    output[upper_thresh] = v[upper_thresh] - tau / rho[upper_thresh]
-    output[lower_thresh] = v[lower_thresh] + (1 + tau) / rho[lower_thresh]
-    return output
+    v_mod = v + 1 / rho * (0.5 - tau)
+    return np.where(
+        np.abs(v_mod) <= 1 / (2 * rho), 0, v_mod - np.sign(v_mod) * 1 / (2 * rho)
+    )
 
 
 # f(x) = huber(x)
@@ -131,8 +129,11 @@ def prox_huber(rho, v, args):
         M = args["M"]
     else:
         M = 1
-    abs_v = np.abs(v)
-    return np.where(abs_v <=  M * (rho + 2)/rho, rho/(2+rho) * v, v - np.sign(v) * 2 * M / rho)
+    return np.where(
+        np.abs(v) <= M * (rho + 2) / rho,
+        rho / (2 + rho) * v,
+        v - np.sign(v) * 2 * M / rho,
+    )
 
 
 g_funcs = {
