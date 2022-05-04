@@ -28,9 +28,11 @@ solver = qss.QSS(data,
                  eps_rel=1e-4,
                  alpha=1.4,
                  rho=0.04,
+                 max_iter=np.inf,
                  precond=True,
                  reg=True,
                  use_iter_refinement=True,
+                 polish=False,
                  )
 ```
 Use the `solve()` method when ready to solve:
@@ -51,9 +53,11 @@ results = solver.solve()
 - `eps_abs`: scalar specifying relative tolerance.
 - `alpha`: scalar specifying overstep size.
 - `rho`: scalar specifying ADMM step size.
+- `max_iter`: maximum number of ADMM iterations to perform.
 - `precond`: boolean specifying whether to perform matrix equilibration.
 - `reg`: boolean specifying whether to regularize KKT matrix. May fail on certain problem instances if set to `False`.
 - `use_iter_refinement`: boolean, only matters if `reg` is `True`. Helps mitigate some of the accuracy loss due to regularization. 
+- `polish`: boolean specifying whether to attempt to polish the final solution. Still in development, best left as `False` for now. 
 
 ### Returns
 A list containing the following:
@@ -66,8 +70,12 @@ The following separable functions are supported:
 - `"abs"`: `g(x) = |x|`
 - `"indge0"`: `g(x) = I(x >= 0)`
 - `"indbox01"`: `g(x) = I(0 <= x <= 1)`
+- `"is_zero"`: `g(x) = I(x == 0)`
+- `"card"`: `g(x) = {0 if x == 0, 1 else}`
+- `"quantile"`: `g(x; tau) = 0.5 * |x| + (tau - 0.5) * x`
+- `"huber"`: `g(x; M) = {x^2 if |x| <= M, 2M|x| - M^2 else}`
 
-The `t`, `a`, `b` parameters are used to shift and scale the above as follows: `t * g(ax - b)`.
+The `t` (weight), `a` (scale), `b` (shift) parameters are used to shift and scale the above as follows: `t * g(ax - b)`.
 
 ### Example
 Nonnegative least squares is a problem of the form
@@ -93,7 +101,7 @@ data["A"] = sp.sparse.csc_matrix((1, p)) # All zeros meaning no constraints
 data["b"] = np.zeros(1)
 data["g"] = [{"g": "indge0", "range": (0, p)}] # Enforce x >= 0
 
-solver = qss.QSS(data, rho=2)
+solver = qss.QSS(data)
 objective, x = solver.solve()
 print(objective)
 ```
