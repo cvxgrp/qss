@@ -131,20 +131,8 @@ def prox_huber(rho, v, args):
         M = args["M"]
     else:
         M = 1
-    # output = np.zeros(len(v))
-    # ind = v > 2 * M / rho
-    # output[ind] = v[ind] - 2 * M / rho[ind]
-    # ind = v < -2 * M / rho
-    # output[ind] = v[ind] + 2 * M / rho[ind]
-    # ind = (v > 0) & (v <= 2 * M / rho)
-    # output[ind] = rho[ind] / (2 + rho[ind]) * v[ind]
-    # ind = (v < 0) & (v >= -2 * M / rho)
-    # output[ind] = rho[ind] / (2 + rho[ind]) * v[ind]
-
     abs_v = np.abs(v)
-    return np.where(
-        abs_v <= M * (rho + 2) / rho, rho / (2 + rho) * v, v - np.sign(v) * 2 * M / rho
-    )
+    return np.where(abs_v <=  M * (rho + 2)/rho, rho/(2+rho) * v, v - np.sign(v) * 2 * M / rho)
 
 
 g_funcs = {
