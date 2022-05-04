@@ -101,18 +101,50 @@ def g_quantile(v, args):
     else:
         tau = 1
     return 0.5 * np.abs(v) + (tau - 0.5) * v
-    
+
+
 def prox_quantile(rho, v, args):
     if "tau" in args:
         tau = args["tau"]
     else:
         tau = 1
     output = np.zeros(len(v))
-    upper_thresh = v - tau/rho > 0
-    lower_thresh = v + (1+tau)/rho < 0
-    output[upper_thresh] = v[upper_thresh] - tau/rho[upper_thresh]
-    output[lower_thresh] = v[lower_thresh] + (1+tau)/rho[lower_thresh]
+    upper_thresh = v - tau / rho > 0
+    lower_thresh = v + (1 + tau) / rho < 0
+    output[upper_thresh] = v[upper_thresh] - tau / rho[upper_thresh]
+    output[lower_thresh] = v[lower_thresh] + (1 + tau) / rho[lower_thresh]
     return output
+
+
+# f(x) = huber(x)
+def g_huber(v, args):
+    if "M" in args:
+        M = args["M"]
+    else:
+        M = 1
+    abs_v = np.abs(v)
+    return np.where(abs_v <= M, abs_v**2, 2 * M * abs_v - M * M)
+
+
+def prox_huber(rho, v, args):
+    if "M" in args:
+        M = args["M"]
+    else:
+        M = 1
+    # output = np.zeros(len(v))
+    # ind = v > 2 * M / rho
+    # output[ind] = v[ind] - 2 * M / rho[ind]
+    # ind = v < -2 * M / rho
+    # output[ind] = v[ind] + 2 * M / rho[ind]
+    # ind = (v > 0) & (v <= 2 * M / rho)
+    # output[ind] = rho[ind] / (2 + rho[ind]) * v[ind]
+    # ind = (v < 0) & (v >= -2 * M / rho)
+    # output[ind] = rho[ind] / (2 + rho[ind]) * v[ind]
+
+    abs_v = np.abs(v)
+    return np.where(
+        abs_v <= M * (rho + 2) / rho, rho / (2 + rho) * v, v - np.sign(v) * 2 * M / rho
+    )
 
 
 g_funcs = {
@@ -123,6 +155,7 @@ g_funcs = {
     "is_zero": g_is_zero,
     "card": g_card,
     "quantile": g_quantile,
+    "huber": g_huber,
 }
 
 prox_ops = {
@@ -133,6 +166,7 @@ prox_ops = {
     "is_zero": prox_is_zero,
     "card": prox_card,
     "quantile": prox_quantile,
+    "huber": prox_huber,
 }
 
 subdiffs = {
@@ -145,7 +179,9 @@ def apply_g_funcs(g_list, x):
     y = np.zeros(len(x))
     for g in g_list:
         func_name = g["g"]
-        if ("args" not in g) or (g["args"] is None): # TODO: don't check this every iter
+        if ("args" not in g) or (
+            g["args"] is None
+        ):  # TODO: don't check this every iter
             g["args"] = {}
         if "args" in g and "weight" in g["args"]:
             weight = g["args"]["weight"]
@@ -171,7 +207,9 @@ def apply_g_funcs(g_list, x):
 def apply_prox_ops(rho, equil_scaling, g_list, x):
     for g in g_list:
         prox_op_name = g["g"]
-        if ("args" not in g) or (g["args"] is None): # TODO: don't check this every iter
+        if ("args" not in g) or (
+            g["args"] is None
+        ):  # TODO: don't check this every iter
             g["args"] = {}
         if "args" in g and "weight" in g["args"]:
             weight = g["args"]["weight"]
@@ -192,7 +230,8 @@ def apply_prox_ops(rho, equil_scaling, g_list, x):
 
         prox = prox_ops[prox_op_name]
         x[start_index:end_index] = (
-            prox(new_rho, new_scale * x[start_index:end_index] - shift, g["args"]) + shift
+            prox(new_rho, new_scale * x[start_index:end_index] - shift, g["args"])
+            + shift
         ) / new_scale
     return x
 

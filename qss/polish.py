@@ -6,7 +6,7 @@ from qss import proximal
 
 def polish(g, zk1, P, q, A, nuk1, dim):
     subdiff_center, subdiff_radius = proximal.get_subdiff(g, zk1)
-    fixed_x_indices = (subdiff_radius != 0)
+    fixed_x_indices = subdiff_radius != 0
     num_fixed = np.sum(fixed_x_indices)
     fixed_r = np.zeros(dim)
     fixed_r[~fixed_x_indices] = subdiff_center[~fixed_x_indices]
