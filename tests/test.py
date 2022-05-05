@@ -51,7 +51,7 @@ def test_nonneg_ls():
     data["r"] = 0.5 * h.T @ h
     data["A"] = np.zeros((1, p))
     data["b"] = np.zeros(1)
-    data["g"] = [{"g": "indge0", "args": {}, "range": (0, p)}]
+    data["g"] = [{"g": "is_pos", "args": {}, "range": (0, p)}]
 
     data["P"] = sp.sparse.csc_matrix(data["P"])
     data["A"] = sp.sparse.csc_matrix(data["A"])
@@ -219,7 +219,7 @@ def test_quadratic_control():
     data["b"] = np.concatenate([xinit, np.zeros(n * T)])
     data["g"] = [
         {
-            "g": "indbox01",
+            "g": "is_bound",
             "args": {"weight": 1, "scale": 0.5, "shift": -0.5},
             "range": (n * (T + 1), n * (T + 1) + m * (T + 1)),
         }

@@ -68,8 +68,8 @@ A list containing the following:
 The following separable functions are supported: 
 - `"zero"`: `g(x) = 0`
 - `"abs"`: `g(x) = |x|`
-- `"indge0"`: `g(x) = I(x >= 0)`
-- `"indbox01"`: `g(x) = I(0 <= x <= 1)`
+- `"is_pos"`: `g(x) = I(x >= 0)`
+- `"is_bound"`: `g(x) = I(0 <= x <= 1)`
 - `"is_zero"`: `g(x) = I(x == 0)`
 - `"card"`: `g(x) = {0 if x == 0, 1 else}`
 - `"quantile"`: `g(x; tau) = 0.5 * |x| + (tau - 0.5) * x`
@@ -99,7 +99,7 @@ data["q"] = -h.T @ G
 data["r"] = 0.5 * h.T @ h
 data["A"] = sp.sparse.csc_matrix((1, p)) # All zeros meaning no constraints
 data["b"] = np.zeros(1)
-data["g"] = [{"g": "indge0", "range": (0, p)}] # Enforce x >= 0
+data["g"] = [{"g": "is_pos", "range": (0, p)}] # Enforce x >= 0
 
 solver = qss.QSS(data)
 objective, x = solver.solve()

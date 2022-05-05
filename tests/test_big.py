@@ -76,8 +76,8 @@ def test_lp_big():
     data["A"] = sp.sparse.hstack([A, -sp.sparse.eye(constr_dim)])
     data["b"] = b
     data["g"] = [
-        {"g": "indge0", "range": (0, dim)},
-        {"g": "indge0", "args": {"scale": -1}, "range": (dim, dim + constr_dim)},
+        {"g": "is_pos", "range": (0, dim)},
+        {"g": "is_pos", "args": {"scale": -1}, "range": (dim, dim + constr_dim)},
     ]
 
     # CVXPY

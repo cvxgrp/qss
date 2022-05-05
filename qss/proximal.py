@@ -1,9 +1,5 @@
 import numpy as np
 
-# Separable functions // proximal operator:
-# 0: f(x) = 0 // prox(v) = v
-# 1: f(x) = |x| // prox(v) = prox(v) = S_{1/rho}(v)
-
 # f(x) = 0
 def g_zero(v, args):
     return 0
@@ -42,7 +38,7 @@ def subdiff_abs(v):
 
 
 # f(x) = I(x >= 0)
-def g_indge0(v, args):
+def g_is_pos(v, args):
     valid = np.all(v >= 0)
     if valid:
         return 0
@@ -50,14 +46,29 @@ def g_indge0(v, args):
         return np.inf
 
 
-def prox_indge0(rho, v, args):
+def prox_is_pos(rho, v, args):
     y = v
     y[np.where(v < 0)] = 0
     return y
 
 
+# f(x) = I(x <= 0)
+def g_is_neg(v, args):
+    valid = np.all(v <= 0)
+    if valid:
+        return 0
+    else:
+        return np.inf
+
+
+def prox_is_neg(v, args):
+    y = v
+    y[np.where(v > 0)] = 0
+    return y
+
+
 # f(x) = I(0 <= x <= 1)
-def g_indbox01(v, args):
+def g_is_bound(v, args):
     valid = np.all(np.logical_and(v >= 0, v <= 1))
     if valid:
         return 0
@@ -65,7 +76,7 @@ def g_indbox01(v, args):
         return np.inf
 
 
-def prox_indbox01(rho, v, args):
+def prox_is_bound(rho, v, args):
     v[v >= 1] = 1
     v[v <= 0] = 0
     return v
@@ -82,6 +93,15 @@ def g_is_zero(v, args):
 
 def prox_is_zero(rho, v, args):
     return np.zeros(len(v))
+
+
+# f(x) = max{x, 0}
+def g_pos(v, args):
+    return np.maximum(v, 0)
+
+
+def prox_pos(rho, v, args):
+    return np.where(v <= 1 / rho, 0, v - 1 / rho)
 
 
 # f(x) = {0 if x == 0, 1 else}
@@ -139,9 +159,11 @@ def prox_huber(rho, v, args):
 g_funcs = {
     "zero": g_zero,
     "abs": g_abs,
-    "indge0": g_indge0,
-    "indbox01": g_indbox01,
+    "is_pos": g_is_pos,
+    "is_neg": g_is_neg,
+    "is_bound": g_is_bound,
     "is_zero": g_is_zero,
+    "pos": g_pos,
     "card": g_card,
     "quantile": g_quantile,
     "huber": g_huber,
@@ -150,9 +172,11 @@ g_funcs = {
 prox_ops = {
     "zero": prox_zero,
     "abs": prox_abs,
-    "indge0": prox_indge0,
-    "indbox01": prox_indbox01,
+    "is_pos": prox_is_pos,
+    "is_neg": prox_is_neg,
+    "is_bound": prox_is_bound,
     "is_zero": prox_is_zero,
+    "pos": prox_pos,
     "card": prox_card,
     "quantile": prox_quantile,
     "huber": prox_huber,
