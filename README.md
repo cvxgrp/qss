@@ -71,6 +71,7 @@ The following separable functions are supported:
 - `"is_pos"`: `g(x) = I(x >= 0)`
 - `"is_bound"`: `g(x) = I(0 <= x <= 1)`
 - `"is_zero"`: `g(x) = I(x == 0)`
+- `"pos"`: `g(x) = max{x, 0}`
 - `"card"`: `g(x) = {0 if x == 0, 1 else}`
 - `"quantile"`: `g(x; tau) = 0.5 * |x| + (tau - 0.5) * x`
 - `"huber"`: `g(x; M) = {x^2 if |x| <= M, 2M|x| - M^2 else}`
