@@ -177,6 +177,36 @@ def prox_is_int(rho, v, args):
     return np.rint(v)
 
 
+# f(x; S) = I(x is in S)
+def g_is_finite_set(v, args):
+    S = np.array(list(args["S"]))
+    is_almost_in_S = np.isclose(v.reshape((-1, 1)), S.reshape((1, -1))).any(axis=1)
+    return np.where(is_almost_in_S, 0, np.inf)
+
+
+def prox_is_finite_set(rho, v, args):
+    S = np.array(list(args["S"]))
+    v = np.asarray(v)
+    diffs = np.subtract(v.reshape((-1, 1)), S.reshape((1, -1)))
+    idx = np.argmin(np.abs(diffs), axis=1)
+    return S[idx]
+
+
+# f(x) = I(x in {0,1})
+def g_is_bool(v, args):
+    S = np.array([0, 1])
+    is_almost_in_S = np.isclose(v.reshape((-1, 1)), S.reshape((1, -1))).any(axis=1)
+    return np.where(is_almost_in_S, 0, np.inf)
+
+
+def prox_is_bool(rho, v, args):
+    S = np.array([0, 1])
+    v = np.asarray(v)
+    diffs = np.subtract(v.reshape((-1, 1)), S.reshape((1, -1)))
+    idx = np.argmin(np.abs(diffs), axis=1)
+    return S[idx]
+
+
 g_funcs = {
     "zero": g_zero,
     "abs": g_abs,
@@ -190,6 +220,8 @@ g_funcs = {
     "quantile": g_quantile,
     "huber": g_huber,
     "is_int": g_is_int,
+    "is_finite_set": g_is_finite_set,
+    "is_bool": g_is_bool,
 }
 
 prox_ops = {
@@ -205,6 +237,8 @@ prox_ops = {
     "quantile": prox_quantile,
     "huber": prox_huber,
     "is_int": prox_is_int,
+    "is_finite_set": prox_is_finite_set,
+    "is_bool": prox_is_bool,
 }
 
 subdiffs = {
