@@ -39,7 +39,7 @@ def subdiff_abs(v):
 
 # f(x) = I(x >= 0)
 def g_is_pos(v, args):
-    valid = np.all(v >= 0)
+    valid = np.all(v >= 0)  # TODO: don't do np.all. Separable
     if valid:
         return 0
     else:
@@ -54,7 +54,7 @@ def prox_is_pos(rho, v, args):
 
 # f(x) = I(x <= 0)
 def g_is_neg(v, args):
-    valid = np.all(v <= 0)
+    valid = np.all(v <= 0)  # TODO: should be doing this separable??
     if valid:
         return 0
     else:
@@ -102,6 +102,15 @@ def g_pos(v, args):
 
 def prox_pos(rho, v, args):
     return np.where(v <= 1 / rho, 0, v - 1 / rho)
+
+
+# f(x) = max{-x, 0}
+def g_neg(v, args):
+    return np.maximum(-v, 0)
+
+
+def prox_neg(rho, v, args):
+    return np.where(v < -1 / rho, v + 1 / rho, 0)
 
 
 # f(x) = {0 if x == 0, 1 else}
@@ -156,6 +165,18 @@ def prox_huber(rho, v, args):
     )
 
 
+# f(x) = I(x is an integer)
+def g_is_int(v, args):
+    return np.where(
+        np.isclose(np.mod(v, 1), 0) | np.isclose(np.mod(v, 1), 1), 0, np.inf
+    )
+    # TODO: change this to something like np.isclose(v, np.rint(v))
+
+
+def prox_is_int(rho, v, args):
+    return np.rint(v)
+
+
 g_funcs = {
     "zero": g_zero,
     "abs": g_abs,
@@ -164,9 +185,11 @@ g_funcs = {
     "is_bound": g_is_bound,
     "is_zero": g_is_zero,
     "pos": g_pos,
+    "neg": g_neg,
     "card": g_card,
     "quantile": g_quantile,
     "huber": g_huber,
+    "is_int": g_is_int,
 }
 
 prox_ops = {
@@ -177,9 +200,11 @@ prox_ops = {
     "is_bound": prox_is_bound,
     "is_zero": prox_is_zero,
     "pos": prox_pos,
+    "neg": prox_neg,
     "card": prox_card,
     "quantile": prox_quantile,
     "huber": prox_huber,
+    "is_int": prox_is_int,
 }
 
 subdiffs = {

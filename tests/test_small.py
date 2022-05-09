@@ -126,6 +126,31 @@ def test_l0_ls():
     assert pytest.approx(qss_result, rel=1e-2) == 328.2067655590608
 
 
+def test_int_ls():
+    np.random.seed(1234)
+    p = 100
+    n = 500
+    G = np.random.rand(n, p) - 0.5
+    h = -100 * np.random.rand(n)
+
+    data = {}
+    data["P"] = G.T @ G
+    data["q"] = -h.T @ G
+    data["r"] = 0.5 * h.T @ h
+    data["A"] = np.zeros((1, p))
+    data["b"] = np.zeros(1)
+    data["g"] = [{"g": "is_int", "args": {}, "range": (0, p)}]
+
+    data["P"] = sp.sparse.csc_matrix(data["P"])
+    data["A"] = sp.sparse.csc_matrix(data["A"])
+
+    solver = qss.QSS(data, max_iter=1000, rho=1e-5)
+    qss_result, x_qss = solver.solve()
+
+    # Regression test as CVXPY can't solve this problem
+    assert pytest.approx(qss_result, rel=1e-2) == 694195.2486268306
+
+
 def test_l1_trend_filtering():
     np.random.seed(1234)
     dim = 5000
