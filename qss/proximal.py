@@ -74,6 +74,7 @@ def g_is_bound(v, args):
         return 0
     else:
         return np.inf
+    # TODO: add upper and lower bound parameters
 
 
 def prox_is_bound(rho, v, args):
