@@ -1,6 +1,7 @@
 import numpy as np
 import scipy as sp
 import qdldl
+import time
 from qss import precondition
 from qss import matrix
 from qss import proximal
@@ -21,6 +22,7 @@ class QSS(object):
         reg=True,
         use_iter_refinement=True,
         polish=False,
+        verbose=False,
     ):
         self._data = data
         self._eps_abs = eps_abs
@@ -32,6 +34,7 @@ class QSS(object):
         self._reg = reg
         self._use_iter_refinement = use_iter_refinement
         self._polish = polish
+        self._verbose = verbose
         return
 
     def solve(self):
@@ -44,6 +47,11 @@ class QSS(object):
 
         alpha = self._alpha
         rho = self._rho
+
+        if self._verbose:
+            print(" ----- QSS: the Quadratic-Separable Solver ----- ")
+            print(" -----        author: Luke Volpatti        ----- ")
+            solve_start_time = time.time()
 
         dim = P.shape[0]
         constr_dim = A.shape[0]
@@ -63,10 +71,19 @@ class QSS(object):
         equil_scaling = np.ones(dim)
         obj_scale = 1
 
-        # Scaling
+        # Preconditioning
         if self._precond:
+            if self._verbose:
+                print("### Preconditioning starts ... ###")
+                precond_start_time = time.time()
             # We are now solving for xtilde, where x = equil_scaling * xtilde
             P, q, r, A, b, equil_scaling, obj_scale = precondition.ruiz(P, q, r, A, b)
+            if self._verbose:
+                print(
+                    "### Preconditioning finished in {} seconds. ###".format(
+                        time.time() - precond_start_time
+                    )
+                )
 
         # Constructing KKT matrix
         if has_constr:
@@ -77,9 +94,14 @@ class QSS(object):
             quad_kkt = P + rho * sp.sparse.identity(dim)
             F = qdldl.Solver(quad_kkt)
 
-        i = 0
+        if self._verbose:
+            print("--------------------------------------------------------------")
+            print(" iter | objective | primal res | dual res |   rho   | time (s) ")
+            print("--------------------------------------------------------------")
+
+        iter_num = 0
         while True:
-            i += 1
+            iter_num += 1
 
             # Update x
             if has_constr:
@@ -108,18 +130,37 @@ class QSS(object):
             r_prim = xk1 - zk1
             r_dual = rho * (zk - zk1)
 
+            if self._verbose and (
+                iter_num == 1 or iter_num == self._max_iter - 1 or iter_num % 25 == 0
+            ):
+                print(
+                    "{} | {}  {}  {}  {}  {}".format(
+                        str(iter_num).rjust(5),
+                        str(10).ljust(10),
+                        format(np.linalg.norm(r_prim), ".2e").ljust(11),
+                        format(np.linalg.norm(r_dual), ".2e").ljust(9),
+                        format(rho, ".2e").ljust(6),
+                        format(time.time() - solve_start_time, ".2e").ljust(8),
+                    )
+                )
+
             # Check if we should stop
-            if i == self._max_iter or (
-                i % 10 == 0
+            if iter_num == self._max_iter or (
+                iter_num % 10 == 0
                 and util.evaluate_stop_crit(
                     xk1, zk, zk1, uk1, dim, rho, self._eps_abs, self._eps_rel
                 )
             ):
-                print("Finished in", i, "iterations")
+                print("--------------------------------------------------------------")
+                print("Finished in", iter_num, "iterations")
 
                 # Polishing
                 if self._polish:
-                    zk1 = polish.polish(g, zk1, P, q, A, nuk1, dim)
+                    zk1_polish = polish.polish(
+                        g, zk1, P, q, r, A, b, equil_scaling, obj_scale, dim
+                    )
+                    t = 1
+                    zk1 = t * zk1_polish + (1 - t) * zk1
 
                 return (
                     (0.5 * zk1 @ P @ zk1 + q @ zk1 + r) / obj_scale
@@ -128,7 +169,7 @@ class QSS(object):
                 )
 
             # Update rho
-            if i % 10 == 0:
+            if iter_num % 10 == 0:
                 # Add 1e-30 to denominators to avoid divide by zero
                 new_rho_candidate = rho * np.sqrt(
                     np.linalg.norm(r_prim, ord=np.inf)

@@ -26,13 +26,16 @@ def subdiff_abs(v):
     c = np.zeros(len(v))
     r = np.zeros(len(v))
 
+    # TODO: change the below to np.isclose() for the zero case
     c[v < 0] = -1
     c[v > 0] = 1
-    c[v == 0] = 0
+    c[np.isclose(v, 0)] = 0
+    # c[v == 0] = 0
 
     r[v < 0] = 0
     r[v > 0] = 0
-    r[v == 0] = 1
+    r[np.isclose(v, 0)] = 1
+    # r[v == 0] = 1
 
     return c, r
 
@@ -315,11 +318,15 @@ def get_subdiff(g_list, x):
     for g in g_list:
         func_name = g["g"]
         # TODO: Shifting, scaling
+        if "args" in g and "weight" in g["args"]:
+            weight = g["args"]["weight"]
+        else:
+            weight = 1
         start_index, end_index = g["range"]
 
         subdiff_func = subdiffs[func_name]
         g_c, g_r = subdiff_func(x[start_index:end_index])
-        c[start_index:end_index] = g_c
-        r[start_index:end_index] = g_r
+        c[start_index:end_index] = weight * g_c
+        r[start_index:end_index] = weight * g_r
 
     return c, r
