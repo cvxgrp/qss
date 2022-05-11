@@ -33,6 +33,7 @@ solver = qss.QSS(data,
                  reg=True,
                  use_iter_refinement=True,
                  polish=False,
+                 verbose=False,
                  )
 ```
 Use the `solve()` method when ready to solve:
@@ -58,6 +59,7 @@ results = solver.solve()
 - `reg`: boolean specifying whether to regularize KKT matrix. May fail on certain problem instances if set to `False`.
 - `use_iter_refinement`: boolean, only matters if `reg` is `True`. Helps mitigate some of the accuracy loss due to regularization. 
 - `polish`: boolean specifying whether to attempt to polish the final solution. Still in development, best left as `False` for now. 
+- `verbose`: boolean specifying whether to print verbose output.
 
 ### Returns
 A list containing the following:
