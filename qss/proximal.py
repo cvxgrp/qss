@@ -147,7 +147,7 @@ def g_quantile(v, args):
     if "tau" in args:
         tau = args["tau"]
     else:
-        tau = 1
+        tau = 0.5
     return 0.5 * np.abs(v) + (tau - 0.5) * v
 
 
@@ -155,7 +155,7 @@ def prox_quantile(rho, v, args):
     if "tau" in args:
         tau = args["tau"]
     else:
-        tau = 1
+        tau = 0.5
     v_mod = v + 1 / rho * (0.5 - tau)
     return np.where(
         np.abs(v_mod) <= 1 / (2 * rho), 0, v_mod - np.sign(v_mod) * 1 / (2 * rho)

@@ -72,15 +72,18 @@ The following separable functions are supported:
 - `"abs"`: `g(x) = |x|`
 - `"is_pos"`: `g(x) = I(x >= 0)`
 - `"is_neg"`: `g(x) = I(x <= 0)`
-- `"is_bound"`: `g(x) = I(0 <= x <= 1)`
+- `"is_bound"`: `g(x; lb, ub) = I(lb <= x <= ub)`
+    - Default: `lb` = 0, `ub` = 1.
 - `"is_zero"`: `g(x) = I(x == 0)`
 - `"pos"`: `g(x) = max{x, 0}`
 - `"neg"`: `g(x) = max{-x, 0}`
 - `"card"`: `g(x) = {0 if x == 0, 1 else}`
 - `"quantile"`: `g(x; tau) = 0.5 * |x| + (tau - 0.5) * x` 
     - `tau` in `(0, 1)` is a scalar.
+    - Default: `tau = 0.5`.
 - `"huber"`: `g(x; M) = {x^2 if |x| <= M, 2M|x| - M^2 else}`
     - `M > 0` is a scalar.
+    - Default: `M = 1`. 
 - `"is_int"`: `g(x) = I(x is an integer)`
 - `"is_finite_set"`: `g(x; S) = I(x is in S)`
     - `S` is a Python set of scalars.
