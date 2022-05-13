@@ -100,9 +100,9 @@ def test_quadratic_control_big(_verbose):
 
     Q = sp.sparse.random(n, n, density=0.1, format="csc")
     R = sp.sparse.random(m, m, density=0.1, format="csc")
-    A = sp.sparse.random(n, n, density=0.3, format="csc")
-    B = sp.sparse.random(n, m, density=0.3, format="csc")
-    xinit = 10 * (np.random.rand(n) - 0.5)
+    A = sp.sparse.random(n, n, density=0.1, format="csc")
+    B = sp.sparse.random(n, m, density=0.1, format="csc")
+    xinit = np.random.rand(n) - 0.5
 
     Q = Q @ Q.T
     R = R @ R.T
@@ -157,6 +157,6 @@ def test_quadratic_control_big(_verbose):
         }
     ]
 
-    solver = qss.QSS(data, verbose=_verbose)
+    solver = qss.QSS(data, verbose=_verbose, eps_abs=1e-7, eps_rel=1e-7)
 
-    assert prob.solve() == pytest.approx(solver.solve()[0], rel=1e-2)
+    qss_res = testutil.compare_qss_cvxpy(prob, solver)
