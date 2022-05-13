@@ -99,6 +99,7 @@ class QSS(object):
             print(" iter | objective | primal res | dual res |   rho   | time (s) ")
             print("--------------------------------------------------------------")
 
+        # Main loop
         iter_num = 0
         while True:
             iter_num += 1
@@ -126,22 +127,22 @@ class QSS(object):
             # Update u
             uk1 = uk + alpha * xk1 + (1 - alpha) * zk - zk1
 
-            # Calculate residuals
-            r_prim = xk1 - zk1
-            r_dual = rho * (zk - zk1)
+            # Calculate residuals and objective
+            r_prim = np.linalg.norm(xk1 - zk1, ord=np.inf)
+            r_dual = np.linalg.norm(rho * (zk - zk1), ord=np.inf)
+            obj_val = util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling)
 
+            # Check if we should print current status
             if self._verbose and (
-                iter_num == 1 or iter_num == self._max_iter - 1 or iter_num % 25 == 0
+                iter_num == 1 or iter_num == self._max_iter or iter_num % 25 == 0
             ):
-                print(
-                    "{} | {}  {}  {}  {}  {}".format(
-                        str(iter_num).rjust(5),
-                        str(10).ljust(10),
-                        format(np.linalg.norm(r_prim), ".2e").ljust(11),
-                        format(np.linalg.norm(r_dual), ".2e").ljust(9),
-                        format(rho, ".2e").ljust(6),
-                        format(time.time() - solve_start_time, ".2e").ljust(8),
-                    )
+                util.print_status(
+                    iter_num,
+                    obj_val,
+                    r_prim,
+                    r_dual,
+                    rho,
+                    solve_start_time,
                 )
 
             # Check if we should stop
@@ -151,20 +152,25 @@ class QSS(object):
                     xk1, zk, zk1, uk1, dim, rho, self._eps_abs, self._eps_rel
                 )
             ):
-                print("--------------------------------------------------------------")
+                # Print status of this last iteration if we haven't already
+                if self._verbose and (
+                    iter_num != self._max_iter and iter_num % 25 != 0
+                ):
+                    util.print_status(
+                        iter_num, obj_val, r_prim, r_dual, rho, solve_start_time
+                    )
+                if self._verbose:
+                    print("--------------------------------------------------------------")
                 print("Finished in", iter_num, "iterations")
 
                 # Polishing
                 if self._polish:
-                    zk1_polish = polish.polish(
+                    zk1 = polish.polish(
                         g, zk1, P, q, r, A, b, equil_scaling, obj_scale, dim
                     )
-                    t = 1
-                    zk1 = t * zk1_polish + (1 - t) * zk1
 
                 return (
-                    (0.5 * zk1 @ P @ zk1 + q @ zk1 + r) / obj_scale
-                    + proximal.apply_g_funcs(g, equil_scaling * zk1),
+                    util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling),
                     equil_scaling * zk1,
                 )
 
@@ -172,8 +178,8 @@ class QSS(object):
             if iter_num % 10 == 0:
                 # Add 1e-30 to denominators to avoid divide by zero
                 new_rho_candidate = rho * np.sqrt(
-                    np.linalg.norm(r_prim, ord=np.inf)
-                    / (np.linalg.norm(r_dual, ord=np.inf) + 1e-30)
+                    r_prim
+                    / (r_dual + 1e-30)
                     * np.linalg.norm(rho * uk1)
                     / (
                         max(
@@ -188,8 +194,8 @@ class QSS(object):
                 if new_rho_candidate == 0:
                     new_rho_candidate = rho
 
+                # Check if new rho is different enough from old to warrant update
                 if new_rho_candidate / rho > 5 or rho / new_rho_candidate > 5:
-                    # print("CHANGING RHO from", rho, "TO", new_rho_candidate)
                     uk1 = uk1 * rho / new_rho_candidate
 
                     # Update KKT matrix
