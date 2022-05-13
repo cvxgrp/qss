@@ -17,9 +17,9 @@ def compare_qss_cvxpy(cp_prob, qss_solver):
     qss_res = qss_solver.solve()
     qss_time = time.time() - t0
 
-    print("-----------------------------------")
+    print("----------------------------------------")
     print("                       CVXPY       QSS")
-    print("-----------------------------------")
+    print("----------------------------------------")
     print("time (s)         ", "{:10.3f}".format(cp_time), "{:10.3f}".format(qss_time))
     print("objective value: ", "{:10.3f}".format(cp_res), "{:10.3f}".format(qss_res[0]))
 

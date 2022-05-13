@@ -26,16 +26,13 @@ def subdiff_abs(v):
     c = np.zeros(len(v))
     r = np.zeros(len(v))
 
-    # TODO: change the below to np.isclose() for the zero case
     c[v < 0] = -1
     c[v > 0] = 1
     c[np.isclose(v, 0)] = 0
-    # c[v == 0] = 0
 
     r[v < 0] = 0
     r[v > 0] = 0
     r[np.isclose(v, 0)] = 1
-    # r[v == 0] = 1
 
     return c, r
 
@@ -72,7 +69,16 @@ def prox_is_neg(v, args):
 
 # f(x) = I(0 <= x <= 1)
 def g_is_bound(v, args):
-    valid = np.all(np.logical_and(v >= 0, v <= 1))
+    # TODO: make sure lb < ub
+    if "lb" in args:
+        lb = args["lb"]
+    else:
+        lb = 0
+    if "ub" in args:
+        ub = args["ub"]
+    else:
+        ub = 1
+    valid = np.all(np.logical_and(v >= lb, v <= ub))
     if valid:
         return 0
     else:
@@ -81,8 +87,17 @@ def g_is_bound(v, args):
 
 
 def prox_is_bound(rho, v, args):
-    v[v >= 1] = 1
-    v[v <= 0] = 0
+    # TODO: make sure lb < ub
+    if "lb" in args:
+        lb = args["lb"]
+    else:
+        lb = 0
+    if "ub" in args:
+        ub = args["ub"]
+    else:
+        ub = 1
+    v[v >= ub] = ub
+    v[v <= lb] = lb
     return v
 
 

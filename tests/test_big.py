@@ -152,7 +152,7 @@ def test_quadratic_control_big(_verbose):
     data["g"] = [
         {
             "g": "is_bound",
-            "args": {"weight": 1, "scale": 0.5, "shift": -0.5},
+            "args": {"lb": -1, "ub": 1},
             "range": (n * (T + 1), n * (T + 1) + m * (T + 1)),
         }
     ]
