@@ -160,7 +160,9 @@ class QSS(object):
                         iter_num, obj_val, r_prim, r_dual, rho, solve_start_time
                     )
                 if self._verbose:
-                    print("--------------------------------------------------------------")
+                    print(
+                        "--------------------------------------------------------------"
+                    )
                 print("Finished in", iter_num, "iterations")
 
                 # Polishing
