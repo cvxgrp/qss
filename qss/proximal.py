@@ -209,13 +209,12 @@ def subdiff_neg(v, args):
 
 # f(x) = {0 if x == 0, 1 else}
 def g_card(v, args):
-    return np.count_nonzero(v)
+    # TODO: change this to isclose?
+    return np.where(v == 0, 0, 1)
 
 
 def prox_card(rho, v, args):
-    # TODO: change this to np.where. We're not making a copy here!
-    v[v < np.sqrt(2 / rho)] = 0
-    return v
+    return np.where(np.abs(v) < np.sqrt(2 / rho), 0, v)
 
 
 def subdiff_card(v, args):

@@ -178,3 +178,22 @@ class TestNeg:
         ls, rs = proximal.subdiff_neg(self.v1, {})
         assert np.all(ls == np.array([-1, -1, -1, 0, 0]))
         assert np.all(rs == np.array([-1, -1, 0, 0, 0]))
+
+
+class TestCard:
+    v1 = np.array([-1, -1e-30, 0, 1e-30, 1])
+
+    def test_g(self):
+        res = proximal.g_card(self.v1, {})
+        assert np.all(res == np.array([1, 1, 0, 1, 1]))
+
+    def test_prox(self):
+        rho = 10
+        res = proximal.prox_card(rho, self.v1, {})
+        assert np.all(res == np.array([-1, 0, 0, 0, 1]))
+
+    def test_subdiff(self):
+        ls, rs = proximal.subdiff_card(self.v1, {})
+        print(ls, rs)
+        assert np.allclose(ls, np.array([np.nan, np.nan, 0, np.nan, np.nan]), equal_nan=True)
+        assert np.allclose(rs, np.array([np.nan, np.nan, 0, np.nan, np.nan]), equal_nan=True)
