@@ -144,17 +144,37 @@ class TestPos:
         res = proximal.g_pos(self.v1, {})
         assert np.all(res == np.array([0, 0, 0, 1e-30, 1]))
 
-    # TODO: fix this!
-    # def test_prox(self):
-    #     rho = 10
-    #     res_qss = proximal.prox_pos(rho, self.v1, {})
-    #     x = cp.Variable(len(self.v1))
-    #     objective = cp.Minimize(cp.sum(cp.pos(x)) + rho / 2 * cp.norm(x - self.v1) ** 2)
-    #     cp.Problem(objective).solve()
-    #     print(res_qss, x.value)
-    #     assert np.all(np.isclose(res_qss, x.value))
+    def test_prox(self):
+        rho = 10
+        res_qss = proximal.prox_pos(rho, self.v1, {})
+        x = cp.Variable(len(self.v1))
+        objective = cp.Minimize(cp.sum(cp.pos(x)) + rho / 2 * cp.norm(x - self.v1) ** 2)
+        # Use SCS as MOSEK gives slightly different answer
+        cp.Problem(objective).solve(solver=cp.SCS)
+        assert np.allclose(res_qss, x.value)
 
     def test_subdiff(self):
         ls, rs = proximal.subdiff_pos(self.v1, {})
         assert np.all(ls == np.array([0, 0, 0, 1, 1]))
         assert np.all(rs == np.array([0, 0, 1, 1, 1]))
+
+
+class TestNeg:
+    v1 = np.array([-1, -1e-30, 0, 1e-30, 1])
+
+    def test_g(self):
+        res = proximal.g_neg(self.v1, {})
+        assert np.all(res == np.array([1, 1e-30, 0, 0, 0]))
+
+    def test_prox(self):
+        rho = 10
+        res_qss = proximal.prox_neg(rho, self.v1, {})
+        x = cp.Variable(len(self.v1))
+        objective = cp.Minimize(cp.sum(cp.neg(x)) + rho / 2 * cp.norm(x - self.v1) ** 2)
+        cp.Problem(objective).solve(solver=cp.SCS)
+        assert np.allclose(res_qss, x.value)
+
+    def test_subdiff(self):
+        ls, rs = proximal.subdiff_neg(self.v1, {})
+        assert np.all(ls == np.array([-1, -1, -1, 0, 0]))
+        assert np.all(rs == np.array([-1, -1, 0, 0, 0]))
