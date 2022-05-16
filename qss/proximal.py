@@ -2,15 +2,15 @@ import numpy as np
 
 # f(x) = 0
 def g_zero(v, args):
-    return 0
+    return np.zeros(len(v))
 
 
 def prox_zero(rho, v, args):
     return v
 
 
-def subdiff_zero(v):
-    return np.zeros(len(v))
+def subdiff_zero(v, args):
+    return np.zeros(len(v)), np.zeros(len(v))
 
 
 # f(x) = |x|
@@ -22,49 +22,64 @@ def prox_abs(rho, v, args):
     return np.maximum(v - 1 / rho, 0) - np.maximum(-v - 1 / rho, 0)
 
 
-def subdiff_abs(v):
-    c = np.zeros(len(v))
-    r = np.zeros(len(v))
+def subdiff_abs(v, args):
+    ls = np.zeros(len(v))
+    rs = np.zeros(len(v))
 
-    c[v < 0] = -1
-    c[v > 0] = 1
-    c[np.isclose(v, 0)] = 0
+    ls[v < 0] = -1
+    rs[v < 0] = -1
 
-    r[v < 0] = 0
-    r[v > 0] = 0
-    r[np.isclose(v, 0)] = 1
+    ls[v > 0] = 1
+    rs[v > 0] = 1
 
-    return c, r
+    ls[np.isclose(v, 0)] = -1
+    rs[np.isclose(v, 0)] = 1
+
+    return ls, rs
 
 
 # f(x) = I(x >= 0)
 def g_is_pos(v, args):
-    valid = np.all(v >= 0)  # TODO: don't do np.all. Separable
-    if valid:
-        return 0
-    else:
-        return np.inf
+    return np.where(v >= 0, 0, np.inf)
 
 
 def prox_is_pos(rho, v, args):
-    y = v
-    y[np.where(v < 0)] = 0
-    return y
+    return np.where(v < 0, 0, v)
+
+
+def subdiff_is_pos(v, args):
+    ls = np.zeros(len(v))
+    rs = np.zeros(len(v))
+
+    ls[v < 0] = np.nan
+    rs[v < 0] = np.nan
+
+    ls[v == 0] = -np.inf
+    rs[v == 0] = 0
+
+    return ls, rs
 
 
 # f(x) = I(x <= 0)
 def g_is_neg(v, args):
-    valid = np.all(v <= 0)  # TODO: should be doing this separable??
-    if valid:
-        return 0
-    else:
-        return np.inf
+    return np.where(v <= 0, 0, np.inf)
 
 
-def prox_is_neg(v, args):
-    y = v
-    y[np.where(v > 0)] = 0
-    return y
+def prox_is_neg(rho, v, args):
+    return np.where(v > 0, 0, v)
+
+
+def subdiff_is_neg(v, args):
+    ls = np.zeros(len(v))
+    rs = np.zeros(len(v))
+
+    ls[v > 0] = np.nan
+    rs[v > 0] = np.nan
+
+    ls[v == 0] = 0
+    rs[v == 0] = np.inf
+
+    return ls, rs
 
 
 # f(x) = I(0 <= x <= 1)
@@ -78,12 +93,7 @@ def g_is_bound(v, args):
         ub = args["ub"]
     else:
         ub = 1
-    valid = np.all(np.logical_and(v >= lb, v <= ub))
-    if valid:
-        return 0
-    else:
-        return np.inf
-    # TODO: add upper and lower bound parameters
+    return np.where((v >= lb) & (v <= ub), 0, np.inf)
 
 
 def prox_is_bound(rho, v, args):
@@ -96,22 +106,57 @@ def prox_is_bound(rho, v, args):
         ub = args["ub"]
     else:
         ub = 1
-    v[v >= ub] = ub
-    v[v <= lb] = lb
-    return v
+    output = np.where(v >= ub, ub, v)
+    output = np.where(output <= lb, lb, output)
+    return output
+
+
+def subdiff_is_bound(v, args):
+    # TODO: make sure lb < ub
+    if "lb" in args:
+        lb = args["lb"]
+    else:
+        lb = 0
+    if "ub" in args:
+        ub = args["ub"]
+    else:
+        ub = 1
+
+    ls = np.zeros(len(v))
+    rs = np.zeros(len(v))
+
+    ls[v > ub] = np.nan
+    rs[v > ub] = np.nan
+
+    ls[v == ub] = 0
+    rs[v == ub] = np.inf
+
+    ls[v < lb] = np.nan
+    rs[v < lb] = np.nan
+
+    ls[v == lb] = -np.inf
+    rs[v == lb] = 0
+
+    return ls, rs
 
 
 # f(x) = I(x == 0)
 def g_is_zero(v, args):
-    valid = np.all(v == 0)
-    if valid:
-        return 0
-    else:
-        return np.inf
+    return np.where(v == 0, 0, np.inf)
 
 
 def prox_is_zero(rho, v, args):
     return np.zeros(len(v))
+
+
+def subdiff_is_zero(v, args):
+    ls = np.nan * np.ones(len(v))
+    rs = np.nan * np.ones(len(v))
+
+    ls[v == 0] = -np.inf
+    rs[v == 0] = np.inf
+
+    return ls, rs
 
 
 # f(x) = max{x, 0}
@@ -120,7 +165,23 @@ def g_pos(v, args):
 
 
 def prox_pos(rho, v, args):
-    return np.where(v <= 1 / rho, 0, v - 1 / rho)
+    output = np.where(v <= 0, v, 0)
+    output = np.where(v > 1 / rho, v - 1 / rho, output)
+    return output
+
+
+def subdiff_pos(v, args):
+    ls = np.zeros(len(v))
+    rs = np.zeros(len(v))
+
+    ls[v > 0] = 1
+    rs[v > 0] = 1
+
+    # TODO: change this to is_close?
+    ls[v == 0] = 0
+    rs[v == 0] = 1
+
+    return ls, rs
 
 
 # f(x) = max{-x, 0}
@@ -129,7 +190,21 @@ def g_neg(v, args):
 
 
 def prox_neg(rho, v, args):
-    return np.where(v < -1 / rho, v + 1 / rho, 0)
+    return np.where(v < -1 / rho, v + 1 / rho, v)
+
+
+def subdiff_neg(v, args):
+    ls = np.zeros(len(v))
+    rs = np.zeros(len(v))
+
+    ls[v < 0] = -1
+    rs[v < 0] = -1
+
+    # TODO: change this to is_close?
+    ls[v == 0] = -1
+    rs[v == 0] = 0
+
+    return ls, rs
 
 
 # f(x) = {0 if x == 0, 1 else}
@@ -138,8 +213,19 @@ def g_card(v, args):
 
 
 def prox_card(rho, v, args):
+    # TODO: change this to np.where. We're not making a copy here!
     v[v < np.sqrt(2 / rho)] = 0
     return v
+
+
+def subdiff_card(v, args):
+    ls = np.nan * np.ones(len(v))
+    rs = np.nan * np.ones(len(v))
+
+    ls[v == 0] = 0
+    rs[v == 0] = 0
+
+    return ls, rs
 
 
 # f(x) = 0.5 * |x| + (tau - 0.5) * x
@@ -160,6 +246,28 @@ def prox_quantile(rho, v, args):
     return np.where(
         np.abs(v_mod) <= 1 / (2 * rho), 0, v_mod - np.sign(v_mod) * 1 / (2 * rho)
     )
+
+
+def subdiff_quantile(v, args):
+    if "tau" in args:
+        tau = args["tau"]
+    else:
+        tau = 0.5
+
+    ls = np.zeros(len(v))
+    rs = np.zeros(len(v))
+
+    ls[v > 0] = tau
+    rs[v > 0] = tau
+
+    ls[v < 0] = tau - 1
+    rs[v < 0] = tau - 1
+
+    # TODO: change to is_close?
+    ls[v == 0] = tau - 1
+    rs[v == 0] = tau
+
+    return ls, rs
 
 
 # f(x) = huber(x)
@@ -184,6 +292,29 @@ def prox_huber(rho, v, args):
     )
 
 
+def subdiff_huber(v, args):
+    if "M" in args:
+        M = args["M"]
+    else:
+        M = 1
+
+    ls = np.zeros(len(v))
+    rs = np.zeros(len(v))
+
+    abs_v = np.abs(v)
+
+    ls[abs_v <= M] = 2 * v[abs_v <= M]
+    rs[abs_v <= M] = 2 * v[abs_v <= M]
+
+    ls[v > M] = 2 * M
+    rs[v > M] = 2 * M
+
+    ls[v < M] = -2 * M
+    rs[v < M] = -2 * M
+
+    return ls, rs
+
+
 # f(x) = I(x is an integer)
 def g_is_int(v, args):
     return np.where(
@@ -194,6 +325,18 @@ def g_is_int(v, args):
 
 def prox_is_int(rho, v, args):
     return np.rint(v)
+
+
+def subdiff_is_int(v, args):
+    ls = np.nan * np.ones(len(v))
+    rs = np.nan * np.ones(len(v))
+
+    int_indices = g_is_int(v, args)
+
+    ls[int_indices == 0] = 0
+    rs[int_indices == 0] = 0
+
+    return ls, rs
 
 
 # f(x; S) = I(x is in S)
@@ -211,6 +354,18 @@ def prox_is_finite_set(rho, v, args):
     return S[idx]
 
 
+def subdiff_is_finite_set(v, args):
+    ls = np.nan * np.ones(len(v))
+    rs = np.nan * np.ones(len(v))
+
+    in_set_indices = g_is_finite_set(v, args)
+
+    ls[in_set_indices == 0] = 0
+    rs[in_set_indices == 0] = 0
+
+    return ls, rs
+
+
 # f(x) = I(x in {0,1})
 def g_is_bool(v, args):
     S = np.array([0, 1])
@@ -224,6 +379,18 @@ def prox_is_bool(rho, v, args):
     diffs = np.subtract(v.reshape((-1, 1)), S.reshape((1, -1)))
     idx = np.argmin(np.abs(diffs), axis=1)
     return S[idx]
+
+
+def subdiff_is_bool(v, args):
+    ls = np.nan * np.ones(len(v))
+    rs = np.nan * np.ones(len(v))
+
+    is_bool_indices = g_is_bool(v, args)
+
+    ls[is_bool_indices == 0] = 0
+    rs[is_bool_indices == 0] = 0
+
+    return ls, rs
 
 
 g_funcs = {
@@ -263,6 +430,18 @@ prox_ops = {
 subdiffs = {
     "zero": subdiff_zero,
     "abs": subdiff_abs,
+    "is_pos": subdiff_is_pos,
+    "is_neg": subdiff_is_neg,
+    "is_bound": subdiff_is_bound,
+    "is_zero": subdiff_is_zero,
+    "pos": subdiff_pos,
+    "neg": subdiff_neg,
+    "card": subdiff_card,
+    "quantile": subdiff_quantile,
+    "huber": subdiff_huber,
+    "is_int": subdiff_is_int,
+    "is_finite_set": subdiff_is_finite_set,
+    "is_bool": subdiff_is_bool,
 }
 
 
@@ -332,16 +511,31 @@ def get_subdiff(g_list, x):
     r = np.zeros(len(x))
     for g in g_list:
         func_name = g["g"]
-        # TODO: Shifting, scaling
+        if ("args" not in g) or (
+            g["args"] is None
+        ):  # TODO: don't check this every iter
+            g["args"] = {}
         if "args" in g and "weight" in g["args"]:
             weight = g["args"]["weight"]
         else:
             weight = 1
+        if "args" in g and "scale" in g["args"]:
+            scale = g["args"]["scale"]
+        else:
+            scale = 1
+        if "args" in g and "shift" in g["args"]:
+            shift = g["args"]["shift"]
+        else:
+            shift = 0
         start_index, end_index = g["range"]
 
         subdiff_func = subdiffs[func_name]
-        g_c, g_r = subdiff_func(x[start_index:end_index])
-        c[start_index:end_index] = weight * g_c
-        r[start_index:end_index] = weight * g_r
+        g_c, g_r = (
+            weight
+            * scale
+            * subdiff_func(scale * x[start_index:end_index] - shift, g["args"])
+        )
+        c[start_index:end_index] = g_c
+        r[start_index:end_index] = g_r
 
     return c, r
