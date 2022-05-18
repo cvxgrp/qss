@@ -506,8 +506,8 @@ def apply_prox_ops(rho, equil_scaling, g_list, x):
 
 
 def get_subdiff(g_list, x):
-    c = np.zeros(len(x))
-    r = np.zeros(len(x))
+    ls = np.zeros(len(x))
+    rs = np.zeros(len(x))
     for g in g_list:
         func_name = g["g"]
         if ("args" not in g) or (
@@ -529,12 +529,10 @@ def get_subdiff(g_list, x):
         start_index, end_index = g["range"]
 
         subdiff_func = subdiffs[func_name]
-        g_c, g_r = (
-            weight
-            * scale
-            * subdiff_func(scale * x[start_index:end_index] - shift, g["args"])
-        )
-        c[start_index:end_index] = g_c
-        r[start_index:end_index] = g_r
+        g_ls, g_rs = subdiff_func(scale * x[start_index:end_index] - shift, g["args"])
+        g_ls = g_ls * weight * scale
+        g_rs = g_rs * weight * scale
+        ls[start_index:end_index] = g_ls
+        rs[start_index:end_index] = g_rs
 
-    return c, r
+    return ls, rs
