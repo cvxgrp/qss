@@ -95,9 +95,9 @@ class QSS(object):
             F = qdldl.Solver(quad_kkt)
 
         if self._verbose:
-            print("--------------------------------------------------------------")
+            print("---------------------------------------------------------------")
             print(" iter | objective | primal res | dual res |   rho   | time (s) ")
-            print("--------------------------------------------------------------")
+            print("---------------------------------------------------------------")
 
         # Main loop
         iter_num = 0
@@ -159,17 +159,25 @@ class QSS(object):
                     util.print_status(
                         iter_num, obj_val, r_prim, r_dual, rho, solve_start_time
                     )
+
+                # Polishing (only works with no constraints for now)
+                if (not has_constr) and self._polish:
+                    zk1, polish_time, polish_iter = polish.steepest_descent(
+                        g, zk1, P, q, r, equil_scaling, obj_scale
+                    )
+                    polish_obj_val = util.evaluate_objective(
+                        P, q, r, g, zk1, obj_scale, equil_scaling
+                    )
+                    if self._verbose:
+                        util.print_status(
+                            "plsh", polish_obj_val, -1, -1, rho, solve_start_time
+                        )
+
                 if self._verbose:
                     print(
                         "--------------------------------------------------------------"
                     )
                 print("Finished in", iter_num, "iterations")
-
-                # Polishing
-                if self._polish:
-                    zk1 = polish.polish(
-                        g, zk1, P, q, r, A, b, equil_scaling, obj_scale, dim
-                    )
 
                 return (
                     util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling),
