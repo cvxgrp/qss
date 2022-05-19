@@ -195,5 +195,9 @@ class TestCard:
     def test_subdiff(self):
         ls, rs = proximal.subdiff_card(self.v1, {})
         print(ls, rs)
-        assert np.allclose(ls, np.array([np.nan, np.nan, 0, np.nan, np.nan]), equal_nan=True)
-        assert np.allclose(rs, np.array([np.nan, np.nan, 0, np.nan, np.nan]), equal_nan=True)
+        assert np.allclose(
+            ls, np.array([np.nan, np.nan, 0, np.nan, np.nan]), equal_nan=True
+        )
+        assert np.allclose(
+            rs, np.array([np.nan, np.nan, 0, np.nan, np.nan]), equal_nan=True
+        )
