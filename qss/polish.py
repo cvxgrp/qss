@@ -1,7 +1,6 @@
 import numpy as np
 import scipy as sp
 import cvxpy as cp
-import time
 from qss import proximal
 from qss import util
 
@@ -45,43 +44,65 @@ def l2_descent_dir(g, x, P, q, r, equil_scaling, obj_scale):
     return v_st, dF_v
 
 
-def steepest_descent(g, x, P, q, r, equil_scaling, obj_scale):
+def sd_eval_obj(x, v_st, a, b, c, t, g, equil_scaling, obj_scale):
+    return (a + b * t + c * t**2) / obj_scale + proximal.apply_g_funcs(
+        g, equil_scaling * (x + t * v_st)
+    )
+
+
+def steepest_descent(g, x, P, q, r, equil_scaling, obj_scale, x_obj):
     converged = False
 
-    start_time = time.time()
     iter = 0
+    prev_mid_t_obj = x_obj
+    prev_t = 1
+
     while not converged:
         iter += 1
 
         v_st, dF_v = l2_descent_dir(g, x, P, q, r, equil_scaling, obj_scale)
-        t = 1
+        left_t = 0.5 * prev_t
+        mid_t = prev_t
+        right_t = 2 * prev_t
 
-        curr_obj_val = util.evaluate_objective(P, q, r, g, x, obj_scale, equil_scaling)
-        desc_obj_val = util.evaluate_objective(
-            P, q, r, g, x + t * v_st, obj_scale, equil_scaling
+        a = 0.5 * x @ P @ x + q @ x + r
+        b = x @ P @ v_st + q @ v_st
+        c = 0.5 * v_st @ P @ v_st
+
+        left_t_obj = sd_eval_obj(x, v_st, a, b, c, left_t, g, equil_scaling, obj_scale)
+        mid_t_obj = sd_eval_obj(x, v_st, a, b, c, mid_t, g, equil_scaling, obj_scale)
+        right_t_obj = sd_eval_obj(
+            x, v_st, a, b, c, right_t, g, equil_scaling, obj_scale
         )
 
-        if desc_obj_val > curr_obj_val:
-            # Need to keep halving until we find a step length that gets lower
-            # objective.
-            while desc_obj_val > curr_obj_val:
-                t *= 0.5
-                desc_obj_val = util.evaluate_objective(
-                    P, q, r, g, x + t * v_st, obj_scale, equil_scaling
-                )
-        else:
-            # We've found a descent step. Now see if increasing step size
-            # results in even lower objective value.
-            t_new = t
-            new_desc_obj_val = desc_obj_val
-            while new_desc_obj_val < desc_obj_val:
-                t_new = 2 * t
-                new_desc_obj_val = util.evaluate_objective(
-                    P, q, r, g, x + t_new * v_st, obj_scale, equil_scaling
-                )
+        found_t = False
+        while not found_t:
+            if mid_t_obj <= left_t_obj and mid_t_obj <= right_t_obj:
+                found_t = True
+            else:
+                if mid_t_obj > left_t_obj:
+                    right_t = mid_t
+                    right_t_obj = mid_t_obj
+                    mid_t = left_t
+                    mid_t_obj = left_t_obj
+                    left_t = 0.5 * left_t
+                    left_t_obj = sd_eval_obj(
+                        x, v_st, a, b, c, left_t, g, equil_scaling, obj_scale
+                    )
+                elif mid_t_obj > right_t_obj:
+                    left_t = mid_t
+                    left_t_obj = mid_t_obj
+                    mid_t = right_t
+                    mid_t_obj = right_t_obj
+                    right_t *= 2
+                    right_t_obj = sd_eval_obj(
+                        x, v_st, a, b, c, right_t, g, equil_scaling, obj_scale
+                    )
 
-        x = x + t * v_st
-        if curr_obj_val - desc_obj_val < 1e-7:
+        x = x + mid_t * v_st
+        if prev_mid_t_obj - mid_t_obj < 1e-5:
             converged = True
+        else:
+            prev_mid_t_obj = mid_t_obj
 
-    return x, time.time() - start_time, iter
+    return x, iter

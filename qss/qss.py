@@ -59,15 +59,16 @@ class QSS(object):
         if not has_constr:
             constr_dim = 0
 
+        # ADMM iterates
         xk = np.zeros(dim)
         zk = np.zeros(dim)
         uk = np.zeros(dim)
-
         xk1 = np.zeros(dim)
         zk1 = np.zeros(dim)
         uk1 = np.zeros(dim)
         nuk1 = np.zeros(dim)
 
+        # Scaling parameters
         equil_scaling = np.ones(dim)
         obj_scale = 1
 
@@ -162,8 +163,8 @@ class QSS(object):
 
                 # Polishing (only works with no constraints for now)
                 if (not has_constr) and self._polish:
-                    zk1, polish_time, polish_iter = polish.steepest_descent(
-                        g, zk1, P, q, r, equil_scaling, obj_scale
+                    zk1, polish_iter = polish.steepest_descent(
+                        g, zk1, P, q, r, equil_scaling, obj_scale, obj_val
                     )
                     polish_obj_val = util.evaluate_objective(
                         P, q, r, g, zk1, obj_scale, equil_scaling
@@ -172,6 +173,7 @@ class QSS(object):
                         util.print_status(
                             "plsh", polish_obj_val, -1, -1, rho, solve_start_time
                         )
+                        print("    iterations:", polish_iter)
 
                 if self._verbose:
                     print(
