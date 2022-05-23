@@ -50,7 +50,7 @@ def sd_eval_obj(x, v_st, a, b, c, t, g, equil_scaling, obj_scale):
     )
 
 
-def steepest_descent(g, x, P, q, r, equil_scaling, obj_scale, x_obj, max_iter=1000):
+def steepest_descent(g, x, P, q, r, equil_scaling, obj_scale, x_obj, max_iter=50):
     converged = False
 
     iter = 0

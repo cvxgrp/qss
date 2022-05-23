@@ -22,6 +22,7 @@ class QSS(object):
         reg=True,
         use_iter_refinement=True,
         polish=False,
+        sd_init=False,
         verbose=False,
     ):
         self._data = data
@@ -34,6 +35,7 @@ class QSS(object):
         self._reg = reg
         self._use_iter_refinement = use_iter_refinement
         self._polish = polish
+        self._sd_init = sd_init
         self._verbose = verbose
         return
 
@@ -85,6 +87,11 @@ class QSS(object):
                         time.time() - precond_start_time
                     )
                 )
+
+        # Using steepest descent to initialize ADMM
+        if self._sd_init:
+            xk, sd_iter = polish.steepest_descent(g, xk, P, q, r, equil_scaling, obj_scale, np.inf, max_iter=10)
+            zk = xk
 
         # Constructing KKT matrix
         if has_constr:
