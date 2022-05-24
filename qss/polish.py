@@ -25,9 +25,24 @@ def polish(g, zk1, P, q, r, A, b, equil_scaling, obj_scale, dim):
     return zk1_polish
 
 
+def l1_descent_dir(g, x, P, q, r, equil_scaling, obj_scale):
+    f_subdiff = P @ x + q
+    ls, rs = proximal.get_subdiff(g, x, equil_scaling, obj_scale)
+
+    ai = f_subdiff + ls
+    bi = f_subdiff + rs
+
+    # 1e-7 to be a bit more conservative when providing descent directions
+    v_st = np.where(bi < -1e-7, 1, 0)
+    v_st = np.where(ai > 1e-7, -1, v_st)
+
+    # Calculate directional derivative
+    dF_v = f_subdiff @ v_st + np.sum(np.maximum(v_st * ls, v_st * rs))
+
+    return v_st, dF_v
+
+
 def l2_descent_dir(g, x, P, q, r, equil_scaling, obj_scale):
-    # TODO: do something with obj_scaling?
-    # This will affect the scaling of v
     f_subdiff = P @ x + q
     ls, rs = proximal.get_subdiff(g, x, equil_scaling, obj_scale)
 
@@ -50,7 +65,7 @@ def sd_eval_obj(x, v_st, a, b, c, t, g, equil_scaling, obj_scale):
     )
 
 
-def steepest_descent(g, x, P, q, r, equil_scaling, obj_scale, x_obj, max_iter=50):
+def steepest_descent(g, x, P, q, r, equil_scaling, obj_scale, x_obj, ord=2, max_iter=50):
     converged = False
 
     iter = 0
@@ -60,7 +75,10 @@ def steepest_descent(g, x, P, q, r, equil_scaling, obj_scale, x_obj, max_iter=50
     while not converged and (iter < max_iter):
         iter += 1
 
-        v_st, dF_v = l2_descent_dir(g, x, P, q, r, equil_scaling, obj_scale)
+        if ord == 1:
+            v_st, dF_v = l1_descent_dir(g, x, P, q, r, equil_scaling, obj_scale)
+        elif ord == 2: 
+            v_st, dF_v = l2_descent_dir(g, x, P, q, r, equil_scaling, obj_scale)
         left_t = 0.5 * prev_t
         mid_t = prev_t
         right_t = 2 * prev_t
