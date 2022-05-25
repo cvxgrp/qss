@@ -90,7 +90,9 @@ class QSS(object):
 
         # Using steepest descent to initialize ADMM
         if self._sd_init:
-            xk, sd_iter = polish.steepest_descent(g, xk, P, q, r, equil_scaling, obj_scale, np.inf, max_iter=10)
+            xk, sd_iter = polish.steepest_descent(
+                g, xk, P, q, r, equil_scaling, obj_scale, ord=2, max_iter=10
+            )
             zk = xk
 
         # Constructing KKT matrix
