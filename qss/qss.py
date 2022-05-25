@@ -200,11 +200,16 @@ class QSS(object):
                     )
                     print(
                         "Average",
-                        (time.time() - iter_start_time - total_refactorization_time) / iter_num,
+                        (time.time() - iter_start_time - total_refactorization_time)
+                        / iter_num,
                         "seconds per iteration",
                     )
                     print("Refactored {} times.".format(refactorization_count))
-                    print("Spent total {} seconds refactorizing.".format(total_refactorization_time))
+                    print(
+                        "Spent total {} seconds refactorizing.".format(
+                            total_refactorization_time
+                        )
+                    )
 
                 return (
                     util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling),
@@ -254,7 +259,9 @@ class QSS(object):
                         F.update(quad_kkt)
 
                     rho = new_rho_candidate
-                    total_refactorization_time += time.time() - refactorization_start_time
+                    total_refactorization_time += (
+                        time.time() - refactorization_start_time
+                    )
 
             xk = xk1
             zk = zk1
