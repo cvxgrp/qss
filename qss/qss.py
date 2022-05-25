@@ -77,7 +77,6 @@ class QSS(object):
         # Preconditioning
         if self._precond:
             if self._verbose:
-                print("### Preconditioning starts ... ###")
                 precond_start_time = time.time()
             # We are now solving for xtilde, where x = equil_scaling * xtilde
             P, q, r, A, b, equil_scaling, obj_scale = precondition.ruiz(P, q, r, A, b)
@@ -96,6 +95,8 @@ class QSS(object):
             zk = xk
 
         # Constructing KKT matrix
+        if self._verbose:
+            factorization_start_time = time.time()
         if has_constr:
             quad_kkt = matrix.build_kkt(P, A, 0, rho, dim, constr_dim)
             quad_kkt_reg = matrix.build_kkt(P, A, -1e-7, rho, dim, constr_dim)
@@ -103,14 +104,23 @@ class QSS(object):
         else:
             quad_kkt = P + rho * sp.sparse.identity(dim)
             F = qdldl.Solver(quad_kkt)
+        if self._verbose:
+            print(
+                "### Factorization finished in {} seconds. ###".format(
+                    time.time() - factorization_start_time
+                )
+            )
 
         if self._verbose:
             print("---------------------------------------------------------------")
             print(" iter | objective | primal res | dual res |   rho   | time (s) ")
             print("---------------------------------------------------------------")
+            iter_start_time = time.time()
 
         # Main loop
         iter_num = 0
+        refactorization_count = 0
+        total_refactorization_time = 0
         while True:
             iter_num += 1
 
@@ -188,7 +198,13 @@ class QSS(object):
                     print(
                         "---------------------------------------------------------------"
                     )
-                print("Finished in", iter_num, "iterations")
+                    print(
+                        "Average",
+                        (time.time() - iter_start_time - total_refactorization_time) / iter_num,
+                        "seconds per iteration",
+                    )
+                    print("Refactored {} times.".format(refactorization_count))
+                    print("Spent total {} seconds refactorizing.".format(total_refactorization_time))
 
                 return (
                     util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling),
@@ -217,6 +233,8 @@ class QSS(object):
 
                 # Check if new rho is different enough from old to warrant update
                 if new_rho_candidate / rho > 5 or rho / new_rho_candidate > 5:
+                    refactorization_count += 1
+                    refactorization_start_time = time.time()
                     uk1 = uk1 * rho / new_rho_candidate
 
                     # Update KKT matrix
@@ -236,6 +254,7 @@ class QSS(object):
                         F.update(quad_kkt)
 
                     rho = new_rho_candidate
+                    total_refactorization_time += time.time() - refactorization_start_time
 
             xk = xk1
             zk = zk1
