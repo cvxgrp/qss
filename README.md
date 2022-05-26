@@ -11,9 +11,8 @@ Where f is a convex quadratic function given by `f(x) = 0.5 x^T P x + q^T x + r`
 To use QSS, the user must specify `P`, `q`, `r`, `A`, `b`, as well as the `g_i` from a built-in collection of separable functions. 
 
 ## Installation
-Clone the repository and run
 ```
-pip3 install ./
+pip install qss
 ```
 
 ## Usage
@@ -45,7 +44,7 @@ results = solver.solve()
 - `data`: dictionary with the following keys:
     - `'P'`, `'q'`, `'r'`, `'A'`, `'b'` specify the quadratic part of the objective and the linear constraint as in the problem formulation above. `'P'` and `'A'` should be `scipy.sparse` CSC matrices, `'q'` and `'r'` should be `numpy` arrays,  and `'r'` should be a scalar.
     - `'g'` is a list of separable function definitions. Each separable function is declared as a dictionary with the following keys:
-        - `'func_name'`: string that corresponds to a valid separable function name (see below for a list of supported functions).
+        - `'g'`: string that corresponds to a valid separable function name (see below for a list of supported functions).
         - `'args'`: `'weight'` (default 1), `'scale'` (default 1), `'shift'` (default 0) allow the `'g'` function to be applied in a weighted manner to a shifted and scaled input. Some functions take additional arguments, see below. 
         - `'range'`: tuple specifying the start index and end index that the function should be applied to.
     
@@ -129,9 +128,9 @@ Activate it with
 ```
 source env/bin/activate
 ```
-And install `qss` in development mode:
+Clone the `qss` repository, `cd` into it, and install `qss` in development mode:
 ```
-pip3 install -e ./ -r requirements.txt
+pip install -e ./ -r requirements.txt
 ```
 Finally, test to make sure the installation worked:
 ```
