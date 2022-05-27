@@ -89,10 +89,19 @@ class QSS(object):
 
         # Using steepest descent to initialize ADMM
         if self._sd_init:
+            if self._verbose:
+                init_start_time = time.time()
             xk, sd_iter = polish.steepest_descent(
                 g, xk, P, q, r, equil_scaling, obj_scale, ord=2, max_iter=10
             )
             zk = xk
+            uk = -(P @ xk + q) / rho
+            if self._verbose:
+                print(
+                    "### Starting point found in {} seconds. ###".format(
+                        time.time() - init_start_time
+                    )
+                )
 
         # Constructing KKT matrix
         if self._verbose:
@@ -183,7 +192,7 @@ class QSS(object):
                 # Polishing (only works with no constraints for now)
                 if (not has_constr) and self._polish:
                     zk1, polish_iter = polish.steepest_descent(
-                        g, zk1, P, q, r, equil_scaling, obj_scale, obj_val
+                        g, zk1, P, q, r, equil_scaling, obj_scale
                     )
                     polish_obj_val = util.evaluate_objective(
                         P, q, r, g, zk1, obj_scale, equil_scaling

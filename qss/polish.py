@@ -65,13 +65,11 @@ def sd_eval_obj(x, v_st, a, b, c, t, g, equil_scaling, obj_scale):
     )
 
 
-def steepest_descent(
-    g, x, P, q, r, equil_scaling, obj_scale, x_obj, ord=2, max_iter=50
-):
+def steepest_descent(g, x, P, q, r, equil_scaling, obj_scale, ord=2, max_iter=50):
     converged = False
 
     iter = 0
-    prev_mid_t_obj = x_obj
+    prev_mid_t_obj = 0  # TODO: is it ok to start this with 0?
     prev_t = 1
 
     while not converged and (iter < max_iter):
