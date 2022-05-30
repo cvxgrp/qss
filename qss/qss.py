@@ -87,8 +87,8 @@ class QSS(object):
                     )
                 )
 
-        # Using steepest descent to initialize ADMM
-        if self._sd_init:
+        # Using steepest descent to initialize ADMM (only for unconstrained problems)
+        if self._sd_init and not has_constr:
             if self._verbose:
                 init_start_time = time.time()
             xk, sd_iter = polish.steepest_descent(
