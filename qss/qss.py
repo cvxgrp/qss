@@ -25,6 +25,25 @@ class QSS(object):
         sd_init=False,
         verbose=False,
     ):
+        dim = data["P"].shape[0]
+
+        # Checking g functions
+        for g in data["g"]:
+            if g["g"] not in proximal.g_funcs:
+                raise ValueError("Invalid g function name:", g["g"])
+            if "args" in g:
+                if "weight" in "args":
+                    if g["args"]["weight"] < 0:
+                        raise ValueError("Weight must be >= 0.")
+            if "range" not in g:
+                raise ValueError("g function range must be specified.")
+            if g["range"][0] < 0:
+                raise ValueError("Range out of bounds.")
+            if g["range"][1] > dim:
+                raise ValueError("Range out of bounds.")
+            if g["range"][0] > g["range"][1]:
+                raise ValueError("Start index must be <= end index.")
+
         self._data = data
         self._eps_abs = eps_abs
         self._eps_rel = eps_rel

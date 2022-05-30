@@ -118,7 +118,7 @@ def steepest_descent(g, x, P, q, r, equil_scaling, obj_scale, ord=2, max_iter=50
                     )
 
         x = x + mid_t * v_st
-        if prev_mid_t_obj - mid_t_obj < 1e-5:
+        if prev_mid_t_obj - mid_t_obj < 1e-5:  # TODO: better stopping crit
             converged = True
         else:
             prev_mid_t_obj = mid_t_obj
