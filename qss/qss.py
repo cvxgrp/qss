@@ -178,7 +178,17 @@ class QSS(object):
             if iter_num == self._max_iter or (
                 iter_num % 10 == 0
                 and util.evaluate_stop_crit(
-                    xk1, zk, zk1, uk1, dim, rho, self._eps_abs, self._eps_rel
+                    xk1,
+                    zk,
+                    zk1,
+                    uk1,
+                    dim,
+                    rho,
+                    self._eps_abs,
+                    self._eps_rel,
+                    P,
+                    q,
+                    ord=2,
                 )
             ):
                 # Print status of this last iteration if we haven't already

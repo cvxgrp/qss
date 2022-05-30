@@ -4,18 +4,34 @@ import time
 from qss import proximal
 
 
-def evaluate_stop_crit(xk1, zk, zk1, uk1, dim, rho, eps_abs, eps_rel):
-    epri = np.sqrt(dim) * eps_abs + eps_rel * max(
-        np.linalg.norm(xk1, ord=np.inf), np.linalg.norm(zk1, ord=np.inf)
-    )
-    edual = np.sqrt(dim) * eps_abs + eps_rel * np.linalg.norm(rho * uk1, ord=np.inf)
-    if (
-        np.linalg.norm(xk1 - zk1, ord=np.inf) < epri
-        and np.linalg.norm(rho * (zk - zk1), ord=np.inf) < edual
-    ):
-        return True
+def evaluate_stop_crit(xk1, zk, zk1, uk1, dim, rho, eps_abs, eps_rel, P, q, ord=2):
+    if ord == 2:
+        epri = np.sqrt(dim) * eps_abs + eps_rel * max(
+            np.linalg.norm(xk1, ord=2), np.linalg.norm(zk1, ord=2)
+        )
+        edual = np.sqrt(dim) * eps_abs + eps_rel * np.linalg.norm(rho * uk1, ord=2)
+        if (
+            np.linalg.norm(xk1 - zk1, ord=2) < epri
+            and np.linalg.norm(rho * (zk - zk1), ord=2) < edual
+        ):
+            return True
+        return False
 
-    return False
+    elif ord == np.inf:
+        epri = eps_abs + eps_rel * max(
+            np.linalg.norm(xk1, ord=np.inf), np.linalg.norm(zk1, ord=np.inf)
+        )
+        edual = eps_abs + eps_rel * max(
+            np.linalg.norm(P @ xk1, ord=np.inf),
+            np.linalg.norm(rho * uk1, ord=np.inf),
+            np.linalg.norm(q, ord=np.inf),
+        )
+        if (
+            np.linalg.norm(xk1 - zk1, ord=np.inf) < epri
+            and np.linalg.norm(P @ xk1 + q + rho * uk1, ord=np.inf) < edual
+        ):
+            return True
+        return False
 
 
 def print_status(iter_num, obj_val, r_prim, r_dual, rho, solve_start_time):
