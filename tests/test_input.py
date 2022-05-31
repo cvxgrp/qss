@@ -39,3 +39,17 @@ class Testg:
         with pytest.raises(ValueError) as exc_info:
             qss.QSS(self.data)
         print(exc_info.value)
+
+
+class TestConstraints:
+    data = {}
+    data["P"] = sp.sparse.eye(100)
+    data["q"] = np.ones(100)
+    data["r"] = 10
+    data["g"] = [{"g": "is_pos", "range": (10, 20)}, {"g": "huber", "range": (30, 50)}]
+
+    def test_no_b(self):
+        self.data["A"] = sp.sparse.csc_matrix(sp.sparse.eye(100))[:50, :]
+        with pytest.raises(ValueError) as exc_info:
+            qss.QSS(self.data)
+        print(exc_info.value)

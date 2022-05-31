@@ -42,7 +42,7 @@ results = solver.solve()
 
 ### Parameters
 - `data`: dictionary with the following keys:
-    - `'P'`, `'q'`, `'r'`, `'A'`, `'b'` specify the quadratic part of the objective and the linear constraint as in the problem formulation above. `'P'` and `'A'` should be `scipy.sparse` CSC matrices, `'q'` and `'r'` should be `numpy` arrays,  and `'r'` should be a scalar.
+    - `'P'`, `'q'`, `'r'`, `'A'`, `'b'` specify the quadratic part of the objective and the linear constraint as in the problem formulation above. `'P'` and `'A'` should be `scipy.sparse` CSC matrices, `'q'` and `'b'` should be `numpy` arrays,  and `'r'` should be a scalar. `'A'` and `'b'` can be excluded from `data` or set to `None` if the linear equality constraints are not needed. 
     - `'g'` is a list of separable function definitions. Each separable function is declared as a dictionary with the following keys:
         - `'g'`: string that corresponds to a valid separable function name (see below for a list of supported functions).
         - `'args'`: `'weight'` (default 1), `'scale'` (default 1), `'shift'` (default 0) allow the `'g'` function to be applied in a weighted manner to a shifted and scaled input. Some functions take additional arguments, see below. 
@@ -110,8 +110,6 @@ data = {}
 data["P"] = G.T @ G
 data["q"] = -h.T @ G
 data["r"] = 0.5 * h.T @ h
-data["A"] = sp.sparse.csc_matrix((1, p)) # All zeros meaning no constraints
-data["b"] = np.zeros(1)
 data["g"] = [{"g": "is_pos", "range": (0, p)}] # Enforce x >= 0
 
 solver = qss.QSS(data)

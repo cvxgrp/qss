@@ -27,6 +27,15 @@ class QSS(object):
     ):
         dim = data["P"].shape[0]
 
+        # Checking constraints
+        if "A" in data and data["A"] is not None:
+            if "b" not in data or data["b"] is None:
+                raise ValueError("Constraint vector not specified.")
+        
+        if "b" in data and data["b"] is not None:
+            if "A" not in data or data["A"] is None:
+                raise ValueError("Constraint matrix not specified.")
+
         # Checking g functions
         for g in data["g"]:
             if g["g"] not in proximal.g_funcs:
@@ -62,8 +71,6 @@ class QSS(object):
         P = self._data["P"]
         q = self._data["q"]
         r = self._data["r"]
-        A = self._data["A"]
-        b = self._data["b"]
         g = self._data["g"]
 
         alpha = self._alpha
@@ -75,10 +82,21 @@ class QSS(object):
             solve_start_time = time.time()
 
         dim = P.shape[0]
-        constr_dim = A.shape[0]
-        has_constr = True if A.nnz != 0 else False
-        if not has_constr:
+
+        if ("A" not in self._data) or (self._data["A"] is None) or (self._data["A"].nnz == 0):
+            # TODO: get rid of this placeholder when QSS is more object-oriented, i.e.,
+            # when all problem data is passed around together. 
+            # I'm using the placeholder for now to avoid littering precondition.py with
+            # 'if' statements. 
+            A = sp.sparse.csc_matrix((1, dim))
+            b = np.ones(1)
+            has_constr = False
             constr_dim = 0
+        else: 
+            A = self._data["A"]
+            b = self._data["b"]
+            has_constr = True
+            constr_dim = A.shape[0]
 
         # ADMM iterates
         xk = np.zeros(dim)
