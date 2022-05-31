@@ -53,3 +53,10 @@ class TestConstraints:
         with pytest.raises(ValueError) as exc_info:
             qss.QSS(self.data)
         print(exc_info.value)
+
+    def test_no_A(self):
+        self.data["A"] = None
+        self.data["b"] = np.ones(50)
+        with pytest.raises(ValueError) as exc_info:
+            qss.QSS(self.data)
+        print(exc_info.value)
