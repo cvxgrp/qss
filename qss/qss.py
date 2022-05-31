@@ -31,7 +31,7 @@ class QSS(object):
         if "A" in data and data["A"] is not None:
             if "b" not in data or data["b"] is None:
                 raise ValueError("Constraint vector not specified.")
-        
+
         if "b" in data and data["b"] is not None:
             if "A" not in data or data["A"] is None:
                 raise ValueError("Constraint matrix not specified.")
@@ -83,16 +83,20 @@ class QSS(object):
 
         dim = P.shape[0]
 
-        if ("A" not in self._data) or (self._data["A"] is None) or (self._data["A"].nnz == 0):
+        if (
+            ("A" not in self._data)
+            or (self._data["A"] is None)
+            or (self._data["A"].nnz == 0)
+        ):
             # TODO: get rid of this placeholder when QSS is more object-oriented, i.e.,
-            # when all problem data is passed around together. 
+            # when all problem data is passed around together.
             # I'm using the placeholder for now to avoid littering precondition.py with
-            # 'if' statements. 
+            # 'if' statements.
             A = sp.sparse.csc_matrix((1, dim))
             b = np.ones(1)
             has_constr = False
             constr_dim = 0
-        else: 
+        else:
             A = self._data["A"]
             b = self._data["b"]
             has_constr = True
