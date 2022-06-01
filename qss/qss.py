@@ -23,14 +23,32 @@ class QSS(object):
         use_iter_refinement=True,
         polish=False,
         sd_init=False,
+        proj_sd=False,
         verbose=False,
     ):
         dim = data["P"].shape[0]
+
+        # Checking quadratic part
+        if "P" not in data:
+            raise ValueError("P matrix must be specified.")
+        if "q" not in data:
+            raise ValueError("q vector must be specified.")
+        if "r" not in data:
+            raise ValueError("r scalar must be specified.")
+        if data["P"].shape[0] != data["P"].shape[1]:
+            raise ValueError("P must be a square matrix")
+        if len(data["q"]) != dim:
+            raise ValueError("q dimensions must correspond to P.")
+        
 
         # Checking constraints
         if "A" in data and data["A"] is not None:
             if "b" not in data or data["b"] is None:
                 raise ValueError("Constraint vector not specified.")
+            if data["A"].shape[1] != dim:
+                raise ValueError("Constraint matrix column number must correspond to P.")
+            if data["A"].shape[0] != len(data["b"]):
+                raise ValueError("A and b dimensions must correspond.")
 
         if "b" in data and data["b"] is not None:
             if "A" not in data or data["A"] is None:
@@ -64,6 +82,7 @@ class QSS(object):
         self._use_iter_refinement = use_iter_refinement
         self._polish = polish
         self._sd_init = sd_init
+        self._proj_sd = proj_sd
         self._verbose = verbose
         return
 
@@ -139,8 +158,8 @@ class QSS(object):
             uk = -(P @ xk + q) / rho
             if self._verbose:
                 print(
-                    "### Starting point found in {} seconds. ###".format(
-                        time.time() - init_start_time
+                    "### Starting point found in {} seconds using {} iterations. ###".format(
+                        time.time() - init_start_time, sd_iter
                     )
                 )
 
@@ -159,6 +178,19 @@ class QSS(object):
                 "### Factorization finished in {} seconds. ###".format(
                     time.time() - factorization_start_time
                 )
+            )
+
+        if self._proj_sd:
+            x_proj_sd, proj_sd_iter = polish.proj_sd(
+                g, P, q, r, A, b, F, equil_scaling, obj_scale
+            )
+            print("Projected SD took {} iterations".format(proj_sd_iter))
+            print("Time taken: {}".format(time.time() - solve_start_time    ))
+            return (
+                util.evaluate_objective(
+                    P, q, r, g, x_proj_sd, obj_scale, equil_scaling
+                ),
+                equil_scaling * x_proj_sd,
             )
 
         if self._verbose:

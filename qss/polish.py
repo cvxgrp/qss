@@ -69,7 +69,7 @@ def steepest_descent(g, x, P, q, r, equil_scaling, obj_scale, ord=2, max_iter=50
     converged = False
 
     iter = 0
-    prev_mid_t_obj = 0  # TODO: is it ok to start this with 0?
+    prev_mid_t_obj = np.inf  # TODO: is it ok to start this with 0?
     prev_t = 1
 
     while not converged and (iter < max_iter):
@@ -119,6 +119,75 @@ def steepest_descent(g, x, P, q, r, equil_scaling, obj_scale, ord=2, max_iter=50
 
         x = x + mid_t * v_st
         if prev_mid_t_obj - mid_t_obj < 1e-5:  # TODO: better stopping crit
+            converged = True
+        else:
+            prev_mid_t_obj = mid_t_obj
+
+    return x, iter
+
+
+def proj_sd(g, P, q, r, A, b_constr, F, equil_scaling, obj_scale, ord=2, max_iter=50):
+    # TODO: get initial point
+    dim = P.shape[0]
+    x = sp.sparse.linalg.lsqr(A, b_constr)[0]
+
+    converged = False
+
+    iter = 0
+    prev_mid_t_obj = np.inf  # TODO: is it ok to start this with np.inf?
+    prev_t = 1
+
+    while not converged and (iter < max_iter):
+        iter += 1
+
+        if ord == 1:
+            v_st, dF_v = l1_descent_dir(g, x, P, q, r, equil_scaling, obj_scale)
+        elif ord == 2:
+            v_st, dF_v = l2_descent_dir(g, x, P, q, r, equil_scaling, obj_scale)
+
+        # Making v_st feasible, so as not to break constraints.
+        v_st = F.solve(np.concatenate([P @ v_st, b_constr]))[:dim]
+
+        left_t = 0.5 * prev_t
+        mid_t = prev_t
+        right_t = 2 * prev_t
+
+        a = 0.5 * x @ P @ x + q @ x + r
+        b = x @ P @ v_st + q @ v_st
+        c = 0.5 * v_st @ P @ v_st
+
+        left_t_obj = sd_eval_obj(x, v_st, a, b, c, left_t, g, equil_scaling, obj_scale)
+        mid_t_obj = sd_eval_obj(x, v_st, a, b, c, mid_t, g, equil_scaling, obj_scale)
+        right_t_obj = sd_eval_obj(
+            x, v_st, a, b, c, right_t, g, equil_scaling, obj_scale
+        )
+
+        found_t = False
+        while not found_t:
+            if mid_t_obj <= left_t_obj and mid_t_obj <= right_t_obj:
+                found_t = True
+            else:
+                if mid_t_obj > left_t_obj:
+                    right_t = mid_t
+                    right_t_obj = mid_t_obj
+                    mid_t = left_t
+                    mid_t_obj = left_t_obj
+                    left_t = 0.5 * left_t
+                    left_t_obj = sd_eval_obj(
+                        x, v_st, a, b, c, left_t, g, equil_scaling, obj_scale
+                    )
+                elif mid_t_obj > right_t_obj:
+                    left_t = mid_t
+                    left_t_obj = mid_t_obj
+                    mid_t = right_t
+                    mid_t_obj = right_t_obj
+                    right_t *= 2
+                    right_t_obj = sd_eval_obj(
+                        x, v_st, a, b, c, right_t, g, equil_scaling, obj_scale
+                    )
+
+        x = x + mid_t * v_st
+        if prev_mid_t_obj - mid_t_obj < 1e-10:  # TODO: better stopping crit
             converged = True
         else:
             prev_mid_t_obj = mid_t_obj

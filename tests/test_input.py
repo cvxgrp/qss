@@ -4,6 +4,43 @@ import qss
 import pytest
 
 
+class TestConstraints:
+    dim = 100
+    constr_dim = 50
+    data = {}
+    data["P"] = sp.sparse.eye(dim)
+    data["q"] = np.ones(dim)
+    data["r"] = 10
+    data["g"] = [{"g": "is_pos", "range": (10, 20)}, {"g": "huber", "range": (30, 50)}]
+
+    def test_no_b(self):
+        self.data["A"] = sp.sparse.csc_matrix(sp.sparse.eye(self.dim))[:self.constr_dim, :]
+        with pytest.raises(ValueError) as exc_info:
+            qss.QSS(self.data)
+        print(exc_info.value)
+
+    def test_no_A(self):
+        self.data["A"] = None
+        self.data["b"] = np.ones(self.constr_dim)
+        with pytest.raises(ValueError) as exc_info:
+            qss.QSS(self.data)
+        print(exc_info.value)
+
+    def test_A_bad_shape(self):
+        self.data["A"] = sp.sparse.csc_matrix(sp.sparse.eye(self.dim - 1))[:self.constr_dim, :]
+        self.data["b"] = np.ones(self.constr_dim)
+        with pytest.raises(ValueError) as exc_info:
+            qss.QSS(self.data)
+        print(exc_info.value)
+    
+    def test_A_b_dimension_mismatch(self):
+        self.data["A"] = sp.sparse.csc_matrix(sp.sparse.eye(self.dim))[:self.constr_dim, :]
+        self.data["b"] = np.ones(self.constr_dim + 1)
+        with pytest.raises(ValueError) as exc_info:
+            qss.QSS(self.data)
+        print(exc_info.value)
+
+
 class Testg:
     data = {}
     data["P"] = sp.sparse.eye(100)
@@ -41,22 +78,3 @@ class Testg:
         print(exc_info.value)
 
 
-class TestConstraints:
-    data = {}
-    data["P"] = sp.sparse.eye(100)
-    data["q"] = np.ones(100)
-    data["r"] = 10
-    data["g"] = [{"g": "is_pos", "range": (10, 20)}, {"g": "huber", "range": (30, 50)}]
-
-    def test_no_b(self):
-        self.data["A"] = sp.sparse.csc_matrix(sp.sparse.eye(100))[:50, :]
-        with pytest.raises(ValueError) as exc_info:
-            qss.QSS(self.data)
-        print(exc_info.value)
-
-    def test_no_A(self):
-        self.data["A"] = None
-        self.data["b"] = np.ones(50)
-        with pytest.raises(ValueError) as exc_info:
-            qss.QSS(self.data)
-        print(exc_info.value)
