@@ -14,7 +14,9 @@ class TestConstraints:
     data["g"] = [{"g": "is_pos", "range": (10, 20)}, {"g": "huber", "range": (30, 50)}]
 
     def test_no_b(self):
-        self.data["A"] = sp.sparse.csc_matrix(sp.sparse.eye(self.dim))[:self.constr_dim, :]
+        self.data["A"] = sp.sparse.csc_matrix(sp.sparse.eye(self.dim))[
+            : self.constr_dim, :
+        ]
         with pytest.raises(ValueError) as exc_info:
             qss.QSS(self.data)
         print(exc_info.value)
@@ -27,14 +29,18 @@ class TestConstraints:
         print(exc_info.value)
 
     def test_A_bad_shape(self):
-        self.data["A"] = sp.sparse.csc_matrix(sp.sparse.eye(self.dim - 1))[:self.constr_dim, :]
+        self.data["A"] = sp.sparse.csc_matrix(sp.sparse.eye(self.dim - 1))[
+            : self.constr_dim, :
+        ]
         self.data["b"] = np.ones(self.constr_dim)
         with pytest.raises(ValueError) as exc_info:
             qss.QSS(self.data)
         print(exc_info.value)
-    
+
     def test_A_b_dimension_mismatch(self):
-        self.data["A"] = sp.sparse.csc_matrix(sp.sparse.eye(self.dim))[:self.constr_dim, :]
+        self.data["A"] = sp.sparse.csc_matrix(sp.sparse.eye(self.dim))[
+            : self.constr_dim, :
+        ]
         self.data["b"] = np.ones(self.constr_dim + 1)
         with pytest.raises(ValueError) as exc_info:
             qss.QSS(self.data)
@@ -76,5 +82,3 @@ class Testg:
         with pytest.raises(ValueError) as exc_info:
             qss.QSS(self.data)
         print(exc_info.value)
-
-

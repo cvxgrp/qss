@@ -146,7 +146,7 @@ def proj_sd(g, P, q, r, A, b_constr, F, equil_scaling, obj_scale, ord=2, max_ite
             v_st, dF_v = l2_descent_dir(g, x, P, q, r, equil_scaling, obj_scale)
 
         # Making v_st feasible, so as not to break constraints.
-        v_st = F.solve(np.concatenate([P @ v_st, b_constr]))[:dim]
+        v_st = F.solve(np.concatenate([P @ v_st, np.zeros_like(b_constr)]))[:dim]
 
         left_t = 0.5 * prev_t
         mid_t = prev_t
@@ -185,11 +185,10 @@ def proj_sd(g, P, q, r, A, b_constr, F, equil_scaling, obj_scale, ord=2, max_ite
                     right_t_obj = sd_eval_obj(
                         x, v_st, a, b, c, right_t, g, equil_scaling, obj_scale
                     )
-
         x = x + mid_t * v_st
-        if prev_mid_t_obj - mid_t_obj < 1e-10:  # TODO: better stopping crit
-            converged = True
-        else:
-            prev_mid_t_obj = mid_t_obj
+        # if prev_mid_t_obj - mid_t_obj < 1e-14:  # TODO: better stopping crit
+        #     converged = True
+        # else:
+        #     prev_mid_t_obj = mid_t_obj
 
     return x, iter

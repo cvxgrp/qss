@@ -39,14 +39,15 @@ class QSS(object):
             raise ValueError("P must be a square matrix")
         if len(data["q"]) != dim:
             raise ValueError("q dimensions must correspond to P.")
-        
 
         # Checking constraints
         if "A" in data and data["A"] is not None:
             if "b" not in data or data["b"] is None:
                 raise ValueError("Constraint vector not specified.")
             if data["A"].shape[1] != dim:
-                raise ValueError("Constraint matrix column number must correspond to P.")
+                raise ValueError(
+                    "Constraint matrix column number must correspond to P."
+                )
             if data["A"].shape[0] != len(data["b"]):
                 raise ValueError("A and b dimensions must correspond.")
 
@@ -185,7 +186,7 @@ class QSS(object):
                 g, P, q, r, A, b, F, equil_scaling, obj_scale
             )
             print("Projected SD took {} iterations".format(proj_sd_iter))
-            print("Time taken: {}".format(time.time() - solve_start_time    ))
+            print("Time taken: {}".format(time.time() - solve_start_time))
             return (
                 util.evaluate_objective(
                     P, q, r, g, x_proj_sd, obj_scale, equil_scaling
