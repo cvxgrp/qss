@@ -12,10 +12,10 @@ def ruiz(P, q, r, A, b):
     S2 = sp.sparse.identity(constr_dim)
     delta1 = np.zeros(dim)
     delta2 = np.zeros(constr_dim)
-    Pbar = P
-    qbar = q
-    Abar = A
-    bbar = b
+    Pbar = P.copy()
+    qbar = np.copy(q)
+    Abar = A.copy()
+    bbar = np.copy(b)
     rbar = r
 
     while (
@@ -42,8 +42,9 @@ def ruiz(P, q, r, A, b):
         bbar = Delta2 @ bbar
 
         gamma = 1 / max(
+            # TODO: this is redundant - will be calculated in the next iter too
             np.mean(sp.sparse.linalg.norm(Pbar, ord=np.inf, axis=0)),
-            np.linalg.norm(q, ord=np.inf),
+            np.linalg.norm(qbar, ord=np.inf),
         )
 
         Pbar *= gamma
