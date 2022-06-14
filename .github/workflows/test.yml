@@ -5,7 +5,7 @@ on:
       - master
 jobs:
     run-tests:
-        runs-on: macos-12
+        runs-on: ubuntu-latest
         steps:
           - name: Checkout Repository
             uses: actions/checkout@v3

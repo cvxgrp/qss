@@ -5,7 +5,7 @@ on:
       - master
 jobs:
     test-build-pypi:
-        runs-on: macos-12
+        runs-on: ubuntu-latest
         steps:
           - name: Checkout Repository
             uses: actions/checkout@v3
@@ -24,7 +24,7 @@ jobs:
               sudo python setup.py sdist bdist_wheel
 
     test-build-conda:
-        runs-on: macos-12
+        runs-on: ubuntu-latest
 # sets default shell to remove need for source to run the conda shell
         defaults:
           run:
