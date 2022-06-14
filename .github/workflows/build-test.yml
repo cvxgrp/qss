@@ -1,4 +1,4 @@
-name: Test Builds
+name: Test Build
 on: 
   push:
     branches-ignore:
@@ -58,5 +58,5 @@ jobs:
               conda install anaconda-client
               conda config --set anaconda_upload no
               git fetch --prune --unshallow --tags
-              VERSION_FROM_GIT_TAG=$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-) conda build . -c conda-forge mpich
+              VERSION_FROM_GIT_TAG=$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-) conda build . -c conda-forge
               echo '::set-output name=gitversion::$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-)'

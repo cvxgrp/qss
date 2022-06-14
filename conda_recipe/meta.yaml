@@ -10,7 +10,7 @@ source:
 build:
   noarch: python
   number: 0
-  script: "{{ PYTHON }} -m pip install -e ./ -r requirements.txt "
+  script: "{{ PYTHON }} -m pip install . --ignore-installed -vv "
 
 requirements:
   host:
