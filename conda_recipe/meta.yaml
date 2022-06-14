@@ -34,7 +34,7 @@ about:
   license: BSD
   license_family: BSD
   license_file:
-  summary: QSS
+  summary: QSS Quadratic-Seperable Solver
   doc_url:
   dev_url:
 
