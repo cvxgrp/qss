@@ -1,4 +1,4 @@
-name: Tests
+name: Test
 on: 
   push:
     branches-ignore:
@@ -15,8 +15,9 @@ jobs:
 
           - name: Install Dependencies
             run: | 
-              sudo pip install -r requirements.txt
-              pip install -e .
+              sudo python -m pip install -r requirements.txt
+              python -m pip install pytest
+              python -m pip install -e .
 
 # Current unit test is not consistent. Occasionally fails despite usually passing. Needs to be fixed.
           - name: Run Unit Tests
