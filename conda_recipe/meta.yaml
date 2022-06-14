@@ -18,14 +18,14 @@ requirements:
     - python
     - scipy
     - numpy
-    - qdldl
+    - qdldl-python
     - cvxpy
     - matplotlib
 
   run:
     - scipy
     - numpy
-    - qdldl
+    - qdldl-python
     - cvxpy
     - matplotlib
 
