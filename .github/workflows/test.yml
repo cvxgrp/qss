@@ -12,13 +12,16 @@ jobs:
 
           - name: Install Python
             uses: actions/setup-python@v3
+              with:
+                python-version: '3.9'
 
           - name: Install Dependencies
             run: | 
-              sudo python -m pip install -r requirements.txt
+              sudo python -m pip install -e ./ -r requirements.txt
               python -m pip install pytest
-              python -m pip install -e .
 
 # Current unit test is not consistent. Occasionally fails despite usually passing. Needs to be fixed.
           - name: Run Unit Tests
-            run: python -m pytest --import-mode=append tests/
+            run: |
+              python -m pytest --import-mode=append tests/test_small.py -s -k test_lp --_verbose=True
+              python -m pytest --import-mode=append tests/

@@ -12,6 +12,8 @@ jobs:
 
           - name: Install Python
             uses: actions/setup-python@v3
+              with:
+                python-version: "3.9"
 
           - name: Install Twine
             run: sudo pip install twine
@@ -56,5 +58,5 @@ jobs:
               conda install anaconda-client
               conda config --set anaconda_upload no
               git fetch --prune --unshallow --tags
-              VERSION_FROM_GIT_TAG=$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-) conda build --no-test . -c conda-forge
+              VERSION_FROM_GIT_TAG=$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-) conda build . -c conda-forge mpich
               echo '::set-output name=gitversion::$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-)'
