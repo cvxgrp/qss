@@ -45,7 +45,6 @@ jobs:
             run: | 
               conda config --set always_yes yes --set auto_update_conda false
               conda update conda
-              conda install conda-build
               conda install mamba -n base -c conda-forge
               mamba install "conda-build>=3.20" colorama pip ruamel ruamel.yaml rich mamba jsonschema -c conda-forge
               conda install -c conda-forge boa
