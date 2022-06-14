@@ -123,7 +123,7 @@ def test_l0_ls(_verbose):
     qss_result, x_qss = solver.solve()
 
     # Regression test as CVXPY can't solve this problem
-    assert pytest.approx(qss_result, rel=1e-2) == 20.63602556435066
+    assert pytest.approx(qss_result, rel=1e-2) == 21.809333660445883
 
 
 def test_int_ls(_verbose):
