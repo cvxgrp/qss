@@ -4,7 +4,7 @@ on:
     branches-ignore:
       - master
 jobs:
-    deploy-pypi:
+    test-build-pypi:
         runs-on: ubuntu-latest
         steps:
           - name: Checkout Repository
@@ -21,7 +21,7 @@ jobs:
               git fetch --prune --unshallow --tags
               sudo python setup.py sdist bdist_wheel
 
-    deploy-conda:
+    test-build-conda:
         runs-on: ubuntu-latest
 # sets default shell to remove need for source to run the conda shell
         defaults:
@@ -55,7 +55,6 @@ jobs:
               conda install anaconda-client
               conda install anaconda-client
               conda config --set anaconda_upload no
-              echo yes | anaconda login --username ${{ secrets.ANACONDA_CLOUD_USERNAME }} --password ${{ secrets.ANACONDA_CLOUD_PASSWORD }}
               git fetch --prune --unshallow --tags
-              VERSION_FROM_GIT_TAG=$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-) conda build . -c conda-forge -c slacgismo --numpy 1.16.4
+              VERSION_FROM_GIT_TAG=$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-) conda build . -c conda-forge
               echo '::set-output name=gitversion::$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-)'
