@@ -21,7 +21,6 @@ requirements:
     - qdldl-python
     - cvxpy
     - matplotlib
-    - mpich
 
   run:
     - pip
@@ -31,7 +30,6 @@ requirements:
     - qdldl-python
     - cvxpy
     - matplotlib
-    - mpich
 
 about:
   home: https://github.com/cvxgrp/qss
