@@ -36,7 +36,7 @@ jobs:
           - name: Install Python
             uses: actions/setup-python@v3
             with:
-              python-version: "3.9"
+              python-version: "3.6"
 
 # Much better than manual installation, original version Miniconda2-4.7.10-Linux-x86_64.sh is broken
           - name: Install Miniconda
@@ -65,5 +65,5 @@ jobs:
               mamba install anaconda-client
               conda config --set anaconda_upload no
               git fetch --prune --unshallow --tags
-              VERSION_FROM_GIT_TAG=$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-) conda build . -c conda-forge
+              VERSION_FROM_GIT_TAG=$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-) conda build . -c conda-forge -c slacgismo --numpy 1.16.4
               echo '::set-output name=gitversion::$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-)'
