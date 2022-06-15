@@ -51,30 +51,9 @@ jobs:
               conda config --set always_yes yes --set auto_update_conda false
               conda update conda
               conda install mamba -n base -c conda-forge
-              mamba install "conda-build>=3.20" colorama pip ruamel ruamel.yaml rich mamba jsonschema -c conda-forge
-              conda install -c conda-forge boa
+              mamba install "conda-build=3.21" colorama pip ruamel ruamel.yaml rich mamba jsonschema -c conda-forge
               pip install -e .
 
-          - name: Test for faulty dependencies numpy
-            run: conda install -c conda-forge numpy
-
-          - name: Test for faulty dependencies scipy
-            run: conda install -c conda-forge scipy
-
-          - name: Test for faulty dependencies qdldl
-            run: conda install -c conda-forge qdldl-python
-
-          - name: Test for faulty dependencies cvxpy
-            run: conda install -c conda-forge cvxpy
-
-          - name: Test for faulty dependencies matplotlib
-            run: conda install -c conda-forge matplotlib
-
-          - name: Test for faulty dependencies python
-            run: conda install -c conda-forge python
-
-          - name: Test for faulty dependencies pip
-            run: conda install -c conda-forge pip
 
 # run install twice due to client-size to ensure all files downloaded
 # echo yes before login to prevent anaconda bug breaking automation
