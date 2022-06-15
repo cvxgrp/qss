@@ -1,4 +1,6 @@
-{% set name = "QSS" %}
+context:
+  version: 1.2.0
+  name: QSS
 
 package:
   name: "{{ name|lower }}"
