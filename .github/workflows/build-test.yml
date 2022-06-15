@@ -70,6 +70,12 @@ jobs:
           - name: Test for faulty dependencies matplotlib
             run: conda install -c conda-forge matplotlib
 
+          - name: Test for faulty dependencies python
+            run: conda install -c conda-forge python
+
+          - name: Test for faulty dependencies pip
+            run: conda install -c conda-forge pip
+
 # run install twice due to client-size to ensure all files downloaded
 # echo yes before login to prevent anaconda bug breaking automation
 # git tags MUST be fetched otherwise output will be blank
