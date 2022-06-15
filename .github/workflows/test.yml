@@ -24,5 +24,4 @@ jobs:
 # Current unit test is not consistent. Occasionally fails despite usually passing. Needs to be fixed.
           - name: Run Unit Tests
             run: |
-              python -m pytest --import-mode=append tests/test_small.py -s -k test_lp --_verbose=True
               python -m pytest --import-mode=append tests/
