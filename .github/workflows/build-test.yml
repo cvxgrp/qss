@@ -55,6 +55,20 @@ jobs:
               conda install -c conda-forge boa
               pip install -e .
 
+          - name: Test for faulty dependencies numpy
+            run: conda install -c conda-forge numpy
+
+          - name: Test for faulty dependencies scipy
+            run: conda install -c conda-forge scipy
+
+          - name: Test for faulty dependencies qdldl
+            run: conda install -c conda-forge qdldl-python
+
+          - name: Test for faulty dependencies cvxpy
+            run: conda install -c conda-forge cvxpy
+
+          - name: Test for faulty dependencies matplotlib
+            run: conda install -c conda-forge matplotlib
 
 # run install twice due to client-size to ensure all files downloaded
 # echo yes before login to prevent anaconda bug breaking automation
@@ -66,5 +80,5 @@ jobs:
               mamba install anaconda-client
               conda config --set anaconda_upload no
               git fetch --prune --unshallow --tags
-              VERSION_FROM_GIT_TAG=$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-) boa build .
+              VERSION_FROM_GIT_TAG=$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-) conda build . -c conda-forge
               echo '::set-output name=gitversion::$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-)'
