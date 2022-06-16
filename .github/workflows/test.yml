@@ -29,7 +29,6 @@ jobs:
             run: |
               python -m pytest --import-mode=append tests/
 
-jobs:
     test-build-pypi:
         needs: run-tests
         runs-on: ubuntu-latest
