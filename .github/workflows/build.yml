@@ -13,6 +13,8 @@ jobs:
 
           - name: Install Python
             uses: actions/setup-python@v3
+            with:
+              python-version: "3.9"
 
           - name: Install Twine
             run: sudo pip install twine
@@ -31,12 +33,15 @@ jobs:
         defaults:
           run:
             shell: bash -l {0}
-        environment: deployment
         steps:
           - name: Checkout Repository
             uses: actions/checkout@v3
 
-# Much better than manual installation, original version Miniconda2-4.7.10-Linux-x86_64.sh is broken
+          - name: Install Python
+            uses: actions/setup-python@v3
+            with:
+              python-version: "3.6"
+
           - name: Install Miniconda
             uses: conda-incubator/setup-miniconda@v2
             with:
@@ -57,7 +62,7 @@ jobs:
 # git tags MUST be fetched otherwise output will be blank
 # bash variables cannot be used in github actions, must use actions specific syntax and methods
           - name: Build the Anaconda Package
-            id: condabuild
+            id: mambabuild
             run: |
               mamba install anaconda-client
               conda config --set anaconda_upload no
@@ -69,4 +74,4 @@ jobs:
           - name: Upload the Anaconda Package
             id: condaload
             run: |
-              anaconda upload -u slacgismo  /usr/share/miniconda3/conda-bld/noarch/solar-data-tools-${{ steps.condabuild.outputs.gitversion }}-*.tar.bz2
+              anaconda upload -u slacgismo  /usr/share/miniconda3/conda-bld/noarch/solar-data-tools-${{ steps.mambabuild.outputs.gitversion }}-*.tar.bz2
