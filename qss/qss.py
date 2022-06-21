@@ -187,6 +187,10 @@ class QSS(object):
             )
 
         if self._proj_sd:
+            if self._proj_sd == True:
+                method = "momentum"
+            else:
+                method = self._proj_sd
             x = sp.sparse.linalg.lsqr(A, b, atol=1e-12, btol=1e-12)[0]
             x_proj_sd, proj_sd_iter = polish.proj_sd(
                 x,
@@ -199,6 +203,7 @@ class QSS(object):
                 F,
                 equil_scaling,
                 obj_scale,
+                method=method,
                 max_iter=self._max_iter,
             )
             print("Projected SD took {} iterations".format(proj_sd_iter))

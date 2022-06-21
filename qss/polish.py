@@ -128,7 +128,19 @@ def steepest_descent(g, x, P, q, r, equil_scaling, obj_scale, ord=2, max_iter=50
 
 
 def proj_sd(
-    x, g, P, q, r, A, b_constr, F, equil_scaling, obj_scale, ord=2, max_iter=2000
+    x,
+    g,
+    P,
+    q,
+    r,
+    A,
+    b_constr,
+    F,
+    equil_scaling,
+    obj_scale,
+    method="momentum",
+    ord=2,
+    max_iter=2000,
 ):
     # TODO: get initial point
     dim = P.shape[0]
@@ -138,7 +150,9 @@ def proj_sd(
     iter = 0
     prev_mid_t_obj = np.inf  # TODO: is it ok to start this with np.inf?
     prev_t = 1
-    prev_step = np.zeros(dim)
+
+    if method == "momentum":
+        prev_step = np.zeros(dim)
 
     new_kkt = sp.sparse.vstack(
         [
@@ -161,8 +175,9 @@ def proj_sd(
         # v_st = F.solve(np.concatenate([P @ v_st_np - q, np.zeros_like(b_constr)]))[:dim]
         v_st = F.solve(np.concatenate([v_st_np, np.zeros_like(b_constr)]))[:dim]
 
-        v_st = 0.8 * prev_step + v_st
-        prev_step = v_st
+        if method == "momentum":
+            v_st = 0.99 * prev_step + v_st
+            prev_step = v_st
 
         left_t = 0.5 * prev_t
         mid_t = prev_t
