@@ -8,6 +8,10 @@ from qss import proximal
 from qss import polish
 from qss import util
 
+# Constants
+RHO_MIN = 1e-6
+RHO_MAX = 1e6
+
 
 class QSS(object):
     def __init__(
@@ -126,6 +130,7 @@ class QSS(object):
         xk = np.zeros(dim)
         zk = np.zeros(dim)
         uk = np.zeros(dim)
+        # TODO: initialize uk = -q / rho?
         xk1 = np.zeros(dim)
         zk1 = np.zeros(dim)
         uk1 = np.zeros(dim)
@@ -182,8 +187,19 @@ class QSS(object):
             )
 
         if self._proj_sd:
+            x = sp.sparse.linalg.lsqr(A, b, atol=1e-12, btol=1e-12)[0]
             x_proj_sd, proj_sd_iter = polish.proj_sd(
-                g, P, q, r, A, b, F, equil_scaling, obj_scale
+                x,
+                g,
+                P,
+                q,
+                r,
+                A,
+                b,
+                F,
+                equil_scaling,
+                obj_scale,
+                max_iter=self._max_iter,
             )
             print("Projected SD took {} iterations".format(proj_sd_iter))
             print("Time taken: {}".format(time.time() - solve_start_time))
@@ -193,6 +209,9 @@ class QSS(object):
                 ),
                 equil_scaling * x_proj_sd,
             )
+            # Preparing for ADMM:
+            # zk = x_proj_sd
+            # uk = -(P @ x_proj_sd + q) / rho
 
         if self._verbose:
             print("---------------------------------------------------------------")
@@ -304,6 +323,20 @@ class QSS(object):
                         )
                     )
 
+                # if self._proj_sd:
+                #     # x = sp.sparse.linalg.lsqr(A, b)[0]
+                #     x_proj_sd, proj_sd_iter = polish.proj_sd(
+                #         xk1, g, P, q, r, A, b, F, equil_scaling, obj_scale
+                #     )
+                #     print("Projected SD took {} iterations".format(proj_sd_iter))
+                #     print("Time taken: {}".format(time.time() - solve_start_time))
+                #     return (
+                #         util.evaluate_objective(
+                #             P, q, r, g, x_proj_sd, obj_scale, equil_scaling
+                #         ),
+                #         equil_scaling * x_proj_sd,
+                # )
+
                 return (
                     util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling),
                     equil_scaling * zk1,
@@ -333,7 +366,14 @@ class QSS(object):
                 if new_rho_candidate / rho > 5 or rho / new_rho_candidate > 5:
                     refactorization_count += 1
                     refactorization_start_time = time.time()
-                    uk1 = uk1 * rho / new_rho_candidate
+                    # uk1 = uk1 * rho / new_rho_candidate
+                    # if new_rho_candidate / rho > 5:
+                    #     new_rho_candidate = 5 * rho
+                    # elif rho / new_rho_candidate > 5:
+                    #     new_rho_candidate = rho / 5
+                    uk1 *= rho  # take back to yk1
+                    new_rho_candidate = min(max(new_rho_candidate, RHO_MIN), RHO_MAX)
+                    uk1 /= new_rho_candidate
 
                     # Update KKT matrix
                     rho_vec = sp.sparse.diags(

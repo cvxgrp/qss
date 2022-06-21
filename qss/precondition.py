@@ -41,11 +41,13 @@ def ruiz(P, q, r, A, b):
         qbar = Delta1 @ qbar
         bbar = Delta2 @ bbar
 
-        gamma = 1 / max(
-            # TODO: this is redundant - will be calculated in the next iter too
-            np.mean(sp.sparse.linalg.norm(Pbar, ord=np.inf, axis=0)),
-            np.linalg.norm(qbar, ord=np.inf),
-        )
+        # TODO: Look into whether this is beneficial or not
+        # gamma = 1 / max(
+        #     # TODO: this is redundant - will be calculated in the next iter too
+        #     np.mean(sp.sparse.linalg.norm(Pbar, ord=np.inf, axis=0)),
+        #     np.linalg.norm(qbar, ord=np.inf),
+        # )
+        gamma = 1
 
         Pbar *= gamma
         qbar *= gamma

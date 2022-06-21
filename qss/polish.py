@@ -127,27 +127,42 @@ def steepest_descent(g, x, P, q, r, equil_scaling, obj_scale, ord=2, max_iter=50
     return x, iter
 
 
-def proj_sd(g, P, q, r, A, b_constr, F, equil_scaling, obj_scale, ord=2, max_iter=50):
+def proj_sd(
+    x, g, P, q, r, A, b_constr, F, equil_scaling, obj_scale, ord=2, max_iter=2000
+):
     # TODO: get initial point
     dim = P.shape[0]
-    x = sp.sparse.linalg.lsqr(A, b_constr)[0]
 
     converged = False
 
     iter = 0
     prev_mid_t_obj = np.inf  # TODO: is it ok to start this with np.inf?
     prev_t = 1
+    prev_step = np.zeros(dim)
 
-    while not converged and (iter < max_iter):
+    new_kkt = sp.sparse.vstack(
+        [
+            sp.sparse.hstack([sp.sparse.identity(dim), A.T]),
+            sp.sparse.hstack([A, 1e-7 * sp.sparse.eye(len(b_constr))]),
+        ]
+    )
+    import qdldl
+
+    F = qdldl.Solver(new_kkt)
+
+    while (not converged) and (iter < max_iter):
         iter += 1
 
         if ord == 1:
             v_st, dF_v = l1_descent_dir(g, x, P, q, r, equil_scaling, obj_scale)
         elif ord == 2:
-            v_st, dF_v = l2_descent_dir(g, x, P, q, r, equil_scaling, obj_scale)
+            v_st_np, dF_v = l2_descent_dir(g, x, P, q, r, equil_scaling, obj_scale)
 
-        # Making v_st feasible, so as not to break constraints.
-        v_st = F.solve(np.concatenate([P @ v_st, np.zeros_like(b_constr)]))[:dim]
+        # v_st = F.solve(np.concatenate([P @ v_st_np - q, np.zeros_like(b_constr)]))[:dim]
+        v_st = F.solve(np.concatenate([v_st_np, np.zeros_like(b_constr)]))[:dim]
+
+        v_st = 0.8 * prev_step + v_st
+        prev_step = v_st
 
         left_t = 0.5 * prev_t
         mid_t = prev_t
@@ -186,9 +201,15 @@ def proj_sd(g, P, q, r, A, b_constr, F, equil_scaling, obj_scale, ord=2, max_ite
                     right_t_obj = sd_eval_obj(
                         x, v_st, a, b, c, right_t, g, equil_scaling, obj_scale
                     )
+
+        if iter % 50 == 0:
+            print("t:", mid_t)
+            print("obj:", mid_t_obj)
+
         x = x + mid_t * v_st
         prev_t = mid_t
-        if prev_mid_t_obj - mid_t_obj < 1e-14:  # TODO: better stopping crit
+
+        if prev_mid_t_obj - mid_t_obj < 1e-7:  # TODO: better stopping crit
             converged = True
         else:
             prev_mid_t_obj = mid_t_obj
