@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 
 
-def build_kkt(P, A, reg, rho, dim, constr_dim):
+def build_kkt(reg, rho, P, A, dim, constr_dim, **kwargs):
     return sp.sparse.vstack(
         [
             sp.sparse.hstack([P + rho * sp.sparse.identity(dim), A.T]),

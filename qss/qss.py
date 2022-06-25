@@ -193,20 +193,10 @@ class QSS(object):
             factorization_start_time = time.time()
         if self._data["has_constr"]:
             self._kkt_info["quad_kkt_unreg"] = matrix.build_kkt(
-                self._data["P"],
-                self._data["A"],
-                0,
-                self._options["rho"],
-                self._data["dim"],
-                self._data["constr_dim"],
+                0, self._options["rho"], **self._data
             )
             self._kkt_info["quad_kkt"] = matrix.build_kkt(
-                self._data["P"],
-                self._data["A"],
-                -1e-7,
-                self._options["rho"],
-                self._data["dim"],
-                self._data["constr_dim"],
+                -1e-7, self._options["rho"], **self._data
             )
         else:
             self._kkt_info["quad_kkt"] = self._data["P"] + self._options[
