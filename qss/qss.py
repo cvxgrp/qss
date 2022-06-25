@@ -98,6 +98,12 @@ class QSS(object):
         self._iterates["y"] = np.zeros(self._data["dim"])
         self._iterates["obj_val"] = None
 
+        # KKT system information
+        self._kkt_info = {}
+        self._kkt_info["quad_kkt"] = None
+        self._kkt_info["quad_kkt_unreg"] = None
+        self._kkt_info["F"] = None
+
         # User-specified options
         self._options = {}
         self._options["eps_abs"] = None
@@ -186,7 +192,7 @@ class QSS(object):
         if self._options["verbose"]:
             factorization_start_time = time.time()
         if self._data["has_constr"]:
-            quad_kkt = matrix.build_kkt(
+            self._kkt_info["quad_kkt_unreg"] = matrix.build_kkt(
                 self._data["P"],
                 self._data["A"],
                 0,
@@ -194,7 +200,7 @@ class QSS(object):
                 self._data["dim"],
                 self._data["constr_dim"],
             )
-            quad_kkt_reg = matrix.build_kkt(
+            self._kkt_info["quad_kkt"] = matrix.build_kkt(
                 self._data["P"],
                 self._data["A"],
                 -1e-7,
@@ -202,12 +208,13 @@ class QSS(object):
                 self._data["dim"],
                 self._data["constr_dim"],
             )
-            F = qdldl.Solver(quad_kkt_reg)
         else:
-            quad_kkt = self._data["P"] + self._options["rho"] * sp.sparse.identity(
-                self._data["dim"]
-            )
-            F = qdldl.Solver(quad_kkt)
+            self._kkt_info["quad_kkt"] = self._data["P"] + self._options[
+                "rho"
+            ] * sp.sparse.identity(self._data["dim"])
+
+        self._kkt_info["F"] = qdldl.Solver(self._kkt_info["quad_kkt"])
+
         if self._options["verbose"]:
             print(
                 "### Factorization finished in {} seconds. ###".format(
@@ -251,9 +258,7 @@ class QSS(object):
 
         self._iterates = admm.admm(
             self._data,
-            F,
-            quad_kkt,
-            quad_kkt_reg,
+            self._kkt_info,
             **self._iterates,
             **self._scaling,
             **self._options
