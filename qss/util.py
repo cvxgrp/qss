@@ -34,6 +34,24 @@ def evaluate_stop_crit(xk1, zk, zk1, uk1, dim, rho, eps_abs, eps_rel, P, q, ord=
         return False
 
 
+def print_info():
+    print("---------------------------------------------------------------")
+    print("              QSS: the Quadratic-Separable Solver              ")
+    print("                     author: Luke Volpatti                     ")
+    print("---------------------------------------------------------------")
+    print()
+
+
+def print_header():
+    print("---------------------------------------------------------------")
+    print(" iter | objective | primal res | dual res |   rho   | time (s) ")
+    print("---------------------------------------------------------------")
+
+
+def print_footer():
+    print("---------------------------------------------------------------")
+
+
 def print_status(iter_num, obj_val, r_prim, r_dual, rho, solve_start_time):
     print(
         "{} | {}  {}  {}  {}  {}".format(

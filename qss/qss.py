@@ -1,54 +1,44 @@
+from sqlite3 import adapt
 import numpy as np
 import scipy as sp
 import qdldl
 import time
+import copy
 from qss import precondition
 from qss import matrix
 from qss import proximal
-from qss import polish
+from qss import admm
+from qss import descent
 from qss import util
-
-# Constants
-RHO_MIN = 1e-6
-RHO_MAX = 1e6
 
 
 class QSS(object):
     def __init__(
         self,
         data,
-        eps_abs=1e-4,
-        eps_rel=1e-4,
-        alpha=1.4,
-        rho=0.1,
-        max_iter=np.inf,
-        precond=True,
-        reg=True,
-        use_iter_refinement=True,
-        polish=False,
-        sd_init=False,
-        proj_sd=False,
-        verbose=False,
     ):
-        dim = data["P"].shape[0]
 
         # Checking quadratic part
         if "P" not in data:
             raise ValueError("P matrix must be specified.")
+
+        self._data = {}
+        self._data["dim"] = data["P"].shape[0]
+
         if "q" not in data:
             raise ValueError("q vector must be specified.")
         if "r" not in data:
             raise ValueError("r scalar must be specified.")
         if data["P"].shape[0] != data["P"].shape[1]:
             raise ValueError("P must be a square matrix")
-        if len(data["q"]) != dim:
+        if len(data["q"]) != self._data["dim"]:
             raise ValueError("q dimensions must correspond to P.")
 
         # Checking constraints
         if "A" in data and data["A"] is not None:
             if "b" not in data or data["b"] is None:
                 raise ValueError("Constraint vector not specified.")
-            if data["A"].shape[1] != dim:
+            if data["A"].shape[1] != self._data["dim"]:
                 raise ValueError(
                     "Constraint matrix column number must correspond to P."
                 )
@@ -71,82 +61,103 @@ class QSS(object):
                 raise ValueError("g function range must be specified.")
             if g["range"][0] < 0:
                 raise ValueError("Range out of bounds.")
-            if g["range"][1] > dim:
+            if g["range"][1] > self._data["dim"]:
                 raise ValueError("Range out of bounds.")
             if g["range"][0] > g["range"][1]:
                 raise ValueError("Start index must be <= end index.")
 
-        self._data = data
-        self._eps_abs = eps_abs
-        self._eps_rel = eps_rel
-        self._alpha = alpha
-        self._rho = rho
-        self._max_iter = max_iter
-        self._precond = precond
-        self._reg = reg
-        self._use_iter_refinement = use_iter_refinement
-        self._polish = polish
-        self._sd_init = sd_init
-        self._proj_sd = proj_sd
-        self._verbose = verbose
-        return
+        # Making copies of the input data and storing
+        self._data["P"] = data["P"].copy()
+        self._data["q"] = np.copy(data["q"])
+        self._data["r"] = data["r"]
+        self._data["g"] = copy.deepcopy(data["g"])
 
-    def solve(self):
-        P = self._data["P"]
-        q = self._data["q"]
-        r = self._data["r"]
-        g = self._data["g"]
-
-        alpha = self._alpha
-        rho = self._rho
-
-        if self._verbose:
-            print(" ----- QSS: the Quadratic-Separable Solver ----- ")
-            print(" -----        author: Luke Volpatti        ----- ")
-            solve_start_time = time.time()
-
-        dim = P.shape[0]
-
-        if (
-            ("A" not in self._data)
-            or (self._data["A"] is None)
-            or (self._data["A"].nnz == 0)
-        ):
+        if ("A" not in data) or (data["A"] is None) or (data["A"].nnz == 0):
             # TODO: get rid of this placeholder when QSS is more object-oriented, i.e.,
             # when all problem data is passed around together.
             # I'm using the placeholder for now to avoid littering precondition.py with
             # 'if' statements.
-            A = sp.sparse.csc_matrix((1, dim))
-            b = np.ones(1)
-            has_constr = False
-            constr_dim = 0
+            self._data["A"] = sp.sparse.csc_matrix((1, self._data["dim"]))
+            self._data["b"] = np.ones(1)
+            self._data["has_constr"] = False
+            self._constr_dim = 0
         else:
-            A = self._data["A"]
-            b = self._data["b"]
-            has_constr = True
-            constr_dim = A.shape[0]
+            self._data["A"] = data["A"].copy()
+            self._data["b"] = np.copy(data["b"])
+            self._data["has_constr"] = True
+            self._data["constr_dim"] = data["A"].shape[0]
 
-        # ADMM iterates
-        xk = np.zeros(dim)
-        zk = np.zeros(dim)
-        uk = np.zeros(dim)
-        # TODO: initialize uk = -q / rho?
-        xk1 = np.zeros(dim)
-        zk1 = np.zeros(dim)
-        uk1 = np.zeros(dim)
-        nuk1 = np.zeros(dim)
+        # Scaling information
+        self._scaling = {}
+        self._scaling["equil_scaling"] = np.ones(self._data["dim"])
+        self._scaling["obj_scale"] = 1
 
-        # Scaling parameters
-        equil_scaling = np.ones(dim)
-        obj_scale = 1
+        # Iterate information
+        self._iterates = {}
+        self._iterates["x"] = np.zeros(self._data["dim"])
+        self._iterates["y"] = np.zeros(self._data["dim"])
+        self._iterates["obj_val"] = None
+
+        # User-specified options
+        self._options = {}
+        self._options["eps_abs"] = None
+        self._options["eps_rel"] = None
+        self._options["alpha"] = None
+        self._options["rho"] = None
+        self._options["adaptive_rho"] = None
+        self._options["max_iter"] = None
+        self._options["precond"] = None
+        self._options["reg"] = None
+        self._options["use_iter_refinement"] = None
+        self._options["polish"] = None
+        self._options["sd_init"] = None
+        self._options["proj_sd"] = None
+        self._options["verbose"] = None
+        return
+
+    def solve(
+        self,
+        eps_abs=1e-4,
+        eps_rel=1e-4,
+        alpha=1.4,
+        rho=0.1,
+        adaptive_rho=True,
+        max_iter=np.inf,
+        precond=True,
+        reg=True,
+        use_iter_refinement=True,
+        polish=False,
+        sd_init=False,
+        proj_sd=False,
+        verbose=False,
+    ):
+
+        self._options["eps_abs"] = eps_abs
+        self._options["eps_rel"] = eps_rel
+        self._options["alpha"] = alpha
+        self._options["rho"] = rho
+        self._options["adaptive_rho"] = adaptive_rho
+        self._options["max_iter"] = max_iter
+        self._options["precond"] = precond
+        self._options["reg"] = reg
+        self._options["use_iter_refinement"] = use_iter_refinement
+        self._options["polish"] = polish
+        self._options["sd_init"] = sd_init
+        self._options["proj_sd"] = proj_sd
+        self._options["verbose"] = verbose
+
+        if self._options["verbose"]:
+            util.print_info()
+            start_time = time.time()
 
         # Preconditioning
-        if self._precond:
-            if self._verbose:
+        if self._options["precond"]:
+            if self._options["verbose"]:
                 precond_start_time = time.time()
             # We are now solving for xtilde, where x = equil_scaling * xtilde
-            P, q, r, A, b, equil_scaling, obj_scale = precondition.ruiz(P, q, r, A, b)
-            if self._verbose:
+            # Note: the below will modify the contents of self._data
+            precondition.ruiz(self._data, self._scaling)
+            if self._options["verbose"]:
                 print(
                     "### Preconditioning finished in {} seconds. ###".format(
                         time.time() - precond_start_time
@@ -154,6 +165,7 @@ class QSS(object):
                 )
 
         # Using steepest descent to initialize ADMM (only for unconstrained problems)
+        """
         if self._sd_init and not has_constr:
             if self._verbose:
                 init_start_time = time.time()
@@ -168,24 +180,42 @@ class QSS(object):
                         time.time() - init_start_time, sd_iter
                     )
                 )
+        """
 
         # Constructing KKT matrix
-        if self._verbose:
+        if self._options["verbose"]:
             factorization_start_time = time.time()
-        if has_constr:
-            quad_kkt = matrix.build_kkt(P, A, 0, rho, dim, constr_dim)
-            quad_kkt_reg = matrix.build_kkt(P, A, -1e-7, rho, dim, constr_dim)
+        if self._data["has_constr"]:
+            quad_kkt = matrix.build_kkt(
+                self._data["P"],
+                self._data["A"],
+                0,
+                self._options["rho"],
+                self._data["dim"],
+                self._data["constr_dim"],
+            )
+            quad_kkt_reg = matrix.build_kkt(
+                self._data["P"],
+                self._data["A"],
+                -1e-7,
+                self._options["rho"],
+                self._data["dim"],
+                self._data["constr_dim"],
+            )
             F = qdldl.Solver(quad_kkt_reg)
         else:
-            quad_kkt = P + rho * sp.sparse.identity(dim)
+            quad_kkt = self._data["P"] + self._options["rho"] * sp.sparse.identity(
+                self._data["dim"]
+            )
             F = qdldl.Solver(quad_kkt)
-        if self._verbose:
+        if self._options["verbose"]:
             print(
                 "### Factorization finished in {} seconds. ###".format(
                     time.time() - factorization_start_time
                 )
             )
 
+        """
         if self._proj_sd:
             if self._proj_sd == True:
                 method = "momentum"
@@ -217,190 +247,46 @@ class QSS(object):
             # Preparing for ADMM:
             # zk = x_proj_sd
             # uk = -(P @ x_proj_sd + q) / rho
+        """
 
-        if self._verbose:
-            print("---------------------------------------------------------------")
-            print(" iter | objective | primal res | dual res |   rho   | time (s) ")
-            print("---------------------------------------------------------------")
-            iter_start_time = time.time()
+        self._iterates = admm.admm(
+            self._data,
+            F,
+            quad_kkt,
+            quad_kkt_reg,
+            **self._iterates,
+            **self._scaling,
+            **self._options
+        )
 
-        # Main loop
-        iter_num = 0
-        refactorization_count = 0
-        total_refactorization_time = 0
-        while True:
-            iter_num += 1
+        return self._iterates["obj_val"], self._iterates["x"]
 
-            # Update x
-            if has_constr:
-                if self._use_iter_refinement:
-                    kkt_solve = matrix.ir_solve(
-                        quad_kkt, F, np.concatenate([-q + rho * (zk - uk), b])
-                    )
-                    xk1 = kkt_solve[:dim]
-                    nuk1 = kkt_solve[dim:]
-                else:
-                    kkt_solve = F.solve(np.concatenate([-q + rho * (zk - uk), b]))
-                    xk1 = kkt_solve[:dim]
-                    nuk1 = kkt_solve[dim:]
-            else:
-                xk1 = F.solve(-q + rho * (zk - uk))
-
-            # Update z
-            zk1 = proximal.apply_prox_ops(
-                rho / obj_scale, equil_scaling, g, alpha * xk1 + (1 - alpha) * zk + uk
+        """
+        # Polishing (only works with no constraints for now)
+        if (not has_constr) and self._polish:
+            zk1, polish_iter = polish.steepest_descent(
+                g, zk1, P, q, r, equil_scaling, obj_scale
             )
-
-            # Update u
-            uk1 = uk + alpha * xk1 + (1 - alpha) * zk - zk1
-
-            # Calculate residuals and objective
-            r_prim = np.linalg.norm(xk1 - zk1, ord=np.inf)
-            r_dual = np.linalg.norm(rho * (zk - zk1), ord=np.inf)
-            obj_val = util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling)
-
-            # Check if we should print current status
-            if self._verbose and (
-                iter_num == 1 or iter_num == self._max_iter or iter_num % 25 == 0
-            ):
+            polish_obj_val = util.evaluate_objective(
+                P, q, r, g, zk1, obj_scale, equil_scaling
+            )
+            if self._verbose:
                 util.print_status(
-                    iter_num,
-                    obj_val,
-                    r_prim,
-                    r_dual,
-                    rho,
-                    solve_start_time,
+                    "plsh", polish_obj_val, -1, -1, rho, solve_start_time
                 )
+                print("    iterations:", polish_iter)
+        """
 
-            # Check if we should stop
-            if iter_num == self._max_iter or (
-                iter_num % 10 == 0
-                and util.evaluate_stop_crit(
-                    xk1,
-                    zk,
-                    zk1,
-                    uk1,
-                    dim,
-                    rho,
-                    self._eps_abs,
-                    self._eps_rel,
-                    P,
-                    q,
-                    ord=2,
-                )
-            ):
-                # Print status of this last iteration if we haven't already
-                if self._verbose and (
-                    iter_num != self._max_iter and iter_num % 25 != 0
-                ):
-                    util.print_status(
-                        iter_num, obj_val, r_prim, r_dual, rho, solve_start_time
-                    )
-
-                # Polishing (only works with no constraints for now)
-                if (not has_constr) and self._polish:
-                    zk1, polish_iter = polish.steepest_descent(
-                        g, zk1, P, q, r, equil_scaling, obj_scale
-                    )
-                    polish_obj_val = util.evaluate_objective(
-                        P, q, r, g, zk1, obj_scale, equil_scaling
-                    )
-                    if self._verbose:
-                        util.print_status(
-                            "plsh", polish_obj_val, -1, -1, rho, solve_start_time
-                        )
-                        print("    iterations:", polish_iter)
-
-                if self._verbose:
-                    print(
-                        "---------------------------------------------------------------"
-                    )
-                    print(
-                        "Average",
-                        (time.time() - iter_start_time - total_refactorization_time)
-                        / iter_num,
-                        "seconds per iteration",
-                    )
-                    print("Refactored {} times.".format(refactorization_count))
-                    print(
-                        "Spent total {} seconds refactorizing.".format(
-                            total_refactorization_time
-                        )
-                    )
-
-                # if self._proj_sd:
-                #     # x = sp.sparse.linalg.lsqr(A, b)[0]
-                #     x_proj_sd, proj_sd_iter = polish.proj_sd(
-                #         xk1, g, P, q, r, A, b, F, equil_scaling, obj_scale
-                #     )
-                #     print("Projected SD took {} iterations".format(proj_sd_iter))
-                #     print("Time taken: {}".format(time.time() - solve_start_time))
-                #     return (
-                #         util.evaluate_objective(
-                #             P, q, r, g, x_proj_sd, obj_scale, equil_scaling
-                #         ),
-                #         equil_scaling * x_proj_sd,
-                # )
-
-                return (
-                    util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling),
-                    equil_scaling * zk1,
-                )
-
-            # Update rho
-            if iter_num % 10 == 0:
-                # Add 1e-30 to denominators to avoid divide by zero
-                new_rho_candidate = rho * np.sqrt(
-                    r_prim
-                    / (r_dual + 1e-30)
-                    * np.linalg.norm(rho * uk1)
-                    / (
-                        max(
-                            np.linalg.norm(xk1, ord=np.inf),
-                            np.linalg.norm(zk1, ord=np.inf),
-                        )
-                        + 1e-30
-                    )
-                )
-
-                # This is for the first iteration
-                if new_rho_candidate == 0:
-                    new_rho_candidate = rho
-
-                # Check if new rho is different enough from old to warrant update
-                if new_rho_candidate / rho > 5 or rho / new_rho_candidate > 5:
-                    refactorization_count += 1
-                    refactorization_start_time = time.time()
-                    # uk1 = uk1 * rho / new_rho_candidate
-                    # if new_rho_candidate / rho > 5:
-                    #     new_rho_candidate = 5 * rho
-                    # elif rho / new_rho_candidate > 5:
-                    #     new_rho_candidate = rho / 5
-                    uk1 *= rho  # take back to yk1
-                    new_rho_candidate = min(max(new_rho_candidate, RHO_MIN), RHO_MAX)
-                    uk1 /= new_rho_candidate
-
-                    # Update KKT matrix
-                    rho_vec = sp.sparse.diags(
-                        np.concatenate([rho * np.ones(dim), np.zeros(constr_dim)])
-                    )
-                    new_rho_vec = sp.sparse.diags(
-                        np.concatenate(
-                            [new_rho_candidate * np.ones(dim), np.zeros(constr_dim)]
-                        )
-                    )
-                    quad_kkt = quad_kkt - rho_vec + new_rho_vec
-                    if has_constr:
-                        quad_kkt_reg = quad_kkt_reg - rho_vec + new_rho_vec
-                        F.update(quad_kkt_reg)
-                    else:
-                        F.update(quad_kkt)
-
-                    rho = new_rho_candidate
-                    total_refactorization_time += (
-                        time.time() - refactorization_start_time
-                    )
-
-            xk = xk1
-            zk = zk1
-            uk = uk1
+        # if self._proj_sd:
+        #     # x = sp.sparse.linalg.lsqr(A, b)[0]
+        #     x_proj_sd, proj_sd_iter = polish.proj_sd(
+        #         xk1, g, P, q, r, A, b, F, equil_scaling, obj_scale
+        #     )
+        #     print("Projected SD took {} iterations".format(proj_sd_iter))
+        #     print("Time taken: {}".format(time.time() - solve_start_time))
+        #     return (
+        #         util.evaluate_objective(
+        #             P, q, r, g, x_proj_sd, obj_scale, equil_scaling
+        #         ),
+        #         equil_scaling * x_proj_sd,
+        # )
