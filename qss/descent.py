@@ -182,7 +182,7 @@ def proj_sd(
     descent_method,
     line_search,
     verbose,
-    max_iter=2000,
+    max_iter,
     ord=2,
     **kwargs
 ):
@@ -226,7 +226,7 @@ def proj_sd(
     )
     F = qdldl.Solver(new_kkt)
 
-    while (not finished) and (iter < max_iter):
+    while (not finished) and (iter_num < max_iter):
         iter_num += 1
 
         if ord == 1:
@@ -273,12 +273,9 @@ def proj_sd(
                 iter_num,
                 obj_val,
                 np.linalg.norm(A @ x - b),
-                "--",
-                "--",
+                np.array([-1]),
+                -1,
                 proj_sd_start_time,
-            )
-            print(
-                "obj:", util.evaluate_objective(P, q, r, g, x, obj_scale, equil_scaling)
             )
 
     return {

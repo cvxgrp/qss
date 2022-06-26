@@ -113,8 +113,7 @@ def admm(
     constr_dim = data["constr_dim"]
 
     # ADMM iterates
-    xk = x
-    zk = xk
+    zk = x
     uk = y / rho  # TODO: do smth with equil_scaling/obj_scale here?
     # TODO: initialize uk = -q / rho?
     xk1 = np.zeros(dim)
@@ -147,7 +146,7 @@ def admm(
                 xk1 = kkt_solve[:dim]
                 nuk1 = kkt_solve[dim:]
         else:
-            xk1 = F.solve(-q + rho * (zk - uk))
+            xk1 = kkt_info["F"].solve(-q + rho * (zk - uk))
 
         # Update z
         zk1 = proximal.apply_prox_ops(

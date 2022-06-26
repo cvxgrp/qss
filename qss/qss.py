@@ -118,6 +118,9 @@ class QSS(object):
         self._options["polish"] = None
         self._options["sd_init"] = None
         self._options["proj_sd"] = None
+        self._options["descent_method"] = None
+        self._options["line_search"] = None
+        self._options["algorithms"] = None
         self._options["verbose"] = None
         return
 
@@ -128,13 +131,16 @@ class QSS(object):
         alpha=1.4,
         rho=0.1,
         adaptive_rho=True,
-        max_iter=np.inf,
+        max_iter=[np.inf],
         precond=True,
         reg=True,
-        use_iter_refinement=True,
+        use_iter_refinement=False,
         polish=False,
         sd_init=False,
         proj_sd=False,
+        descent_method="momentum",
+        line_search=True,
+        algorithms=["admm"],
         verbose=False,
     ):
 
@@ -150,6 +156,9 @@ class QSS(object):
         self._options["polish"] = polish
         self._options["sd_init"] = sd_init
         self._options["proj_sd"] = proj_sd
+        self._options["descent_method"] = descent_method
+        self._options["line_search"] = line_search
+        self._options["algorithms"] = algorithms
         self._options["verbose"] = verbose
 
         if self._options["verbose"]:
@@ -212,79 +221,40 @@ class QSS(object):
                 )
             )
 
-        """
-        if self._proj_sd:
-            if self._proj_sd == True:
-                method = "momentum"
+        max_iter_list = self._options[
+            "max_iter"
+        ]  # TODO get rid of this or make more elegant
+        for i, algorithm in enumerate(algorithms):
+            if i == 0 and algorithm == "proj_sd":
+                self._iterates["x"] = sp.sparse.linalg.lsqr(
+                    self._data["A"], self._data["b"], atol=1e-12, btol=1e-12
+                )[0]
+            self._options["max_iter"] = max_iter_list[i]
+            if algorithm == "proj_sd":
+                self._iterates = descent.proj_sd(
+                    self._data,
+                    self._kkt_info,
+                    **self._iterates,
+                    **self._scaling,
+                    **self._options,
+                )
+            elif algorithm == "admm":
+                self._iterates = admm.admm(
+                    self._data,
+                    self._kkt_info,
+                    **self._iterates,
+                    **self._scaling,
+                    **self._options,
+                )
             else:
-                method = self._proj_sd
-            x = sp.sparse.linalg.lsqr(A, b, atol=1e-12, btol=1e-12)[0]
-            x_proj_sd, proj_sd_iter = polish.proj_sd(
-                x,
-                g,
-                P,
-                q,
-                r,
-                A,
-                b,
-                F,
-                equil_scaling,
-                obj_scale,
-                method=method,
-                max_iter=self._max_iter,
-            )
-            print("Projected SD took {} iterations".format(proj_sd_iter))
-            print("Time taken: {}".format(time.time() - solve_start_time))
-            return (
-                util.evaluate_objective(
-                    P, q, r, g, x_proj_sd, obj_scale, equil_scaling
-                ),
-                equil_scaling * x_proj_sd,
-            )
-            # Preparing for ADMM:
-            # zk = x_proj_sd
-            # uk = -(P @ x_proj_sd + q) / rho
-        """
+                raise ValueError("Invalid algorithm specified")
 
-        self._iterates = admm.admm(
-            self._data,
-            self._kkt_info,
-            **self._iterates,
-            **self._scaling,
-            **self._options
-        )
+        self._options["max_iter"] = max_iter_list
+
+        if self._options["verbose"]:
+            print("Total solve time {} seconds.".format(time.time() - start_time))
 
         return (
             self._iterates["obj_val"],
             self._scaling["equil_scaling"] * self._iterates["x"],
         )
-
-        """
-        # Polishing (only works with no constraints for now)
-        if (not has_constr) and self._polish:
-            zk1, polish_iter = polish.steepest_descent(
-                g, zk1, P, q, r, equil_scaling, obj_scale
-            )
-            polish_obj_val = util.evaluate_objective(
-                P, q, r, g, zk1, obj_scale, equil_scaling
-            )
-            if self._verbose:
-                util.print_status(
-                    "plsh", polish_obj_val, -1, -1, rho, solve_start_time
-                )
-                print("    iterations:", polish_iter)
-        """
-
-        # if self._proj_sd:
-        #     # x = sp.sparse.linalg.lsqr(A, b)[0]
-        #     x_proj_sd, proj_sd_iter = polish.proj_sd(
-        #         xk1, g, P, q, r, A, b, F, equil_scaling, obj_scale
-        #     )
-        #     print("Projected SD took {} iterations".format(proj_sd_iter))
-        #     print("Time taken: {}".format(time.time() - solve_start_time))
-        #     return (
-        #         util.evaluate_objective(
-        #             P, q, r, g, x_proj_sd, obj_scale, equil_scaling
-        #         ),
-        #         equil_scaling * x_proj_sd,
-        # )
