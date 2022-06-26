@@ -254,7 +254,10 @@ class QSS(object):
             **self._options
         )
 
-        return self._iterates["obj_val"], self._iterates["x"]
+        return (
+            self._iterates["obj_val"],
+            self._scaling["equil_scaling"] * self._iterates["x"],
+        )
 
         """
         # Polishing (only works with no constraints for now)

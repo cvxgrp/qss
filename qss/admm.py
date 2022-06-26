@@ -114,8 +114,8 @@ def admm(
 
     # ADMM iterates
     xk = x
-    zk = x
-    uk = y / rho
+    zk = xk
+    uk = y / rho  # TODO: do smth with equil_scaling/obj_scale here?
     # TODO: initialize uk = -q / rho?
     xk1 = np.zeros(dim)
     zk1 = np.zeros(dim)
@@ -162,17 +162,6 @@ def admm(
         r_dual = np.linalg.norm(rho * (zk - zk1), ord=np.inf)
         obj_val = util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling)
 
-        # Check if we should print current status
-        if verbose and (iter_num == 1 or iter_num == max_iter or iter_num % 25 == 0):
-            util.print_status(
-                iter_num,
-                obj_val,
-                r_prim,
-                r_dual,
-                rho,
-                admm_start_time,
-            )
-
         # Check if we should stop
         if iter_num == max_iter or (
             iter_num % 10 == 0
@@ -192,26 +181,18 @@ def admm(
         ):
             finished = True
 
-            # Print status of this last iteration if we haven't already
-            if verbose and (iter_num != max_iter and iter_num % 25 != 0):
-                util.print_status(
-                    iter_num, obj_val, r_prim, r_dual, rho, admm_start_time
-                )
-
-            if verbose:
-                util.print_footer()
-                print(
-                    "Average",
-                    (time.time() - admm_start_time - total_refactorization_time)
-                    / iter_num,
-                    "seconds per iteration",
-                )
-                print("Refactored {} times.".format(refactorization_count))
-                print(
-                    "Spent total {} seconds refactorizing.".format(
-                        total_refactorization_time
-                    )
-                )
+        # Check if we should print current status
+        if verbose and (
+            finished or iter_num == 1 or iter_num == max_iter or iter_num % 25 == 0
+        ):
+            util.print_status(
+                iter_num,
+                obj_val,
+                r_prim,
+                r_dual,
+                rho,
+                admm_start_time,
+            )
 
         # Update rho
         if adaptive_rho and (not finished) and (iter_num % 10 == 0):
@@ -234,8 +215,20 @@ def admm(
         zk = zk1
         uk = uk1
 
+    if verbose:
+        util.print_footer()
+        print(
+            "Average",
+            (time.time() - admm_start_time - total_refactorization_time) / iter_num,
+            "seconds per iteration",
+        )
+        print("Refactored {} times.".format(refactorization_count))
+        print(
+            "Spent total {} seconds refactorizing.".format(total_refactorization_time)
+        )
+
     return {
-        "x": equil_scaling * zk1,
+        "x": zk1,
         "y": rho * uk1,  # TODO: Does y need to be scaled by equil_scaling or obj_scale?
         "obj_val": util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling),
     }
