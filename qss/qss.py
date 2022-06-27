@@ -80,7 +80,7 @@ class QSS(object):
             self._data["A"] = sp.sparse.csc_matrix((1, self._data["dim"]))
             self._data["b"] = np.ones(1)
             self._data["has_constr"] = False
-            self._constr_dim = 0
+            self._data["constr_dim"] = 1
         else:
             self._data["A"] = data["A"].copy()
             self._data["b"] = np.copy(data["b"])

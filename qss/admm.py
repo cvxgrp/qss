@@ -52,12 +52,15 @@ def update_rho(
         uk1 /= new_rho_candidate
 
         # Update KKT matrix
-        I0_matrix = sp.sparse.block_diag(
-            [
-                sp.sparse.identity(dim, format="csc"),
-                sp.sparse.csc_matrix((constr_dim, constr_dim)),
-            ]
-        )
+        if has_constr:
+            I0_matrix = sp.sparse.block_diag(
+                [
+                    sp.sparse.identity(dim, format="csc"),
+                    sp.sparse.csc_matrix((constr_dim, constr_dim)),
+                ]
+            )
+        else:
+            I0_matrix = sp.sparse.identity(dim, format="csc")
 
         if has_constr:
             kkt_info["quad_kkt_unreg"] += (new_rho_candidate - rho) * I0_matrix

@@ -5,7 +5,7 @@ import time
 import qss
 
 
-def compare_qss_cvxpy(cp_prob, qss_solver):
+def compare_qss_cvxpy(cp_prob, qss_solver, options):
     print("Comparing CVXPY to QSS.")
     print("Starting CVXPY")
     t0 = time.time()
@@ -14,7 +14,7 @@ def compare_qss_cvxpy(cp_prob, qss_solver):
 
     print("Starting QSS")
     t0 = time.time()
-    qss_res = qss_solver.solve()
+    qss_res = qss_solver.solve(**options)
     qss_time = time.time() - t0
 
     print("----------------------------------------")
