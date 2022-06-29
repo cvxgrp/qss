@@ -1,4 +1,3 @@
-from sqlite3 import adapt
 import numpy as np
 import scipy as sp
 import qdldl
@@ -242,9 +241,9 @@ class QSS(object):
                 self._iterates = admm.admm(
                     self._data,
                     self._kkt_info,
+                    self._options,
                     **self._iterates,
                     **self._scaling,
-                    **self._options,
                 )
             else:
                 raise ValueError("Invalid algorithm specified")

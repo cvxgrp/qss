@@ -1,8 +1,6 @@
 import numpy as np
 import scipy as sp
 import time
-
-from zmq import has
 from qss import proximal
 from qss import matrix
 from qss import util
@@ -82,24 +80,8 @@ def update_rho(
     )
 
 
-def admm(
-    data,
-    kkt_info,
-    x,
-    y,
-    equil_scaling,
-    obj_scale,
-    rho,
-    adaptive_rho,
-    alpha,
-    eps_abs,
-    eps_rel,
-    use_iter_refinement,
-    verbose,
-    max_iter,
-    **kwargs
-):
-    if verbose:
+def admm(data, kkt_info, options, x, y, equil_scaling, obj_scale, **kwargs):
+    if options["verbose"]:
         print(" #####     Beginning ADMM solve     #####")
         util.print_header()
         admm_start_time = time.time()
@@ -114,6 +96,15 @@ def admm(
     dim = data["dim"]
     has_constr = data["has_constr"]
     constr_dim = data["constr_dim"]
+
+    rho = options["rho"]
+    adaptive_rho = options["adaptive_rho"]
+    alpha = options["alpha"]
+    eps_abs = options["eps_abs"]
+    eps_rel = options["eps_rel"]
+    use_iter_refinement = options["use_iter_refinement"]
+    verbose = options["verbose"]
+    max_iter = options["max_iter"]
 
     # ADMM iterates
     zk = x
@@ -212,6 +203,7 @@ def admm(
                 zk1,
                 uk1,
             )
+            options["rho"] = rho  # Update globally
 
         xk = xk1
         zk = zk1
