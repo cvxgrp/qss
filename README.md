@@ -1,20 +1,11 @@
 # QSS: Quadratic-Separable Solver
 QSS solves problems of the form 
-$$
-\begin{equation*}
-\begin{array}{ll}
-\text{minimize} & (1/2) x^T P x + q^T x + r + g(x) \\
-\text{subject to} & Ax = b
-\end{array}
-\end{equation*}
-$$
+$$\begin{equation*} \begin{array}{ll} \text{minimize} & (1/2) x^T P x + q^T x + r + g(x) \\\\\\ \text{subject to} & Ax = b \end{array} \end{equation*}$$
 where $x \in \bf{R}^n$ is the decision variable being optimized over. The
 objective is defined by a positive definite matrix $P \in \bf{S}^n_+$, a vector
 $q \in \bf{R}^n$, a scalar $r \in \bf{R}$, and a $g$ that is separable in the
 entries of $x$, i.e., $g$ can be written as 
-$$
-g(x) = \sum_{i=1}^n g_i(x_i).
-$$
+$$g(x) = \sum_{i=1}^n g_i(x_i).$$
 The constraints are defined by a matrix $A \in \bf{R}^{m \times n}$ and a vector
 $b \in \bf{R}^m$. 
 
@@ -83,19 +74,19 @@ The following separable functions are supported:
 - `"is_bound"`: $g(x; lb, ub) = I(lb \leq x \leq ub)$
     - Default: `lb` = 0, `ub` = 1.
 - `"is_zero"`: $g(x) = I(x == 0)$
-- `"pos"`: $g(x) = \max\{x, 0\}$
-- `"neg"`: $g(x) = \max\{-x, 0\}$
-- `"card"`: $g(x) = \{0 \text{ if } x = 0, 1 \text{ else}\}$
+- `"pos"`: $g(x) = \max\\{x, 0\\}$
+- `"neg"`: $g(x) = \max\\{-x, 0\\}$
+- `"card"`: $g(x) = \\{0 \text{ if } x = 0, 1 \text{ else}\\}$
 - `"quantile"`: $g(x; \tau) = 0.5 |x| + (\tau - 0.5) x$ 
     - `tau` in `(0, 1)` is a scalar.
     - Default: `tau = 0.5`.
-- `"huber"`: $g(x; M) = \{x^2 \text{ if } |x| \leq M, 2M|x| - M^2 \text{ else}\}$
+- `"huber"`: $g(x; M) = \\{x^2 \text{ if } |x| \leq M, 2M|x| - M^2 \text{ else}\\}$
     - `M > 0` is a scalar.
     - Default: `M = 1`. 
 - `"is_int"`: $g(x) = I(x \text{ is an integer})$
 - `"is_finite_set"`: $g(x; S) = I(x \in S)$
     - `S` is a Python set of scalars.
-- `"is_bool"`: $g(x) = I(x \in \{0,1\})$
+- `"is_bool"`: $g(x) = I(x \in \\{0,1\\})$
 
 The `t` (weight), `a` (scale), `b` (shift) parameters are used to shift and scale the above as follows: `t * g(ax - b)`.
 
