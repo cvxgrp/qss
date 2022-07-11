@@ -11,7 +11,7 @@ from qss import descent
 from qss import util
 
 
-class QSS(object):
+class QSS:
     def __init__(
         self,
         data,
