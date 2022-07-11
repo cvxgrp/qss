@@ -42,12 +42,12 @@ def ruiz(data, scaling):
         bbar = Delta2 @ bbar
 
         # TODO: Look into whether this is beneficial or not
-        # gamma = 1 / max(
-        #     # TODO: this is redundant - will be calculated in the next iter too
-        #     np.mean(sp.sparse.linalg.norm(Pbar, ord=np.inf, axis=0)),
-        #     np.linalg.norm(qbar, ord=np.inf),
-        # )
-        gamma = 1
+        gamma = 1 / max(
+            # TODO: this is redundant - will be calculated in the next iter too
+            np.mean(sp.sparse.linalg.norm(Pbar, ord=np.inf, axis=0)),
+            np.linalg.norm(qbar, ord=np.inf),
+        )
+        # gamma = 1
 
         Pbar *= gamma
         qbar *= gamma
