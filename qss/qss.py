@@ -115,8 +115,6 @@ class QSS:
         self._options["reg"] = None
         self._options["use_iter_refinement"] = None
         self._options["polish"] = None
-        self._options["sd_init"] = None
-        self._options["proj_sd"] = None
         self._options["descent_method"] = None
         self._options["line_search"] = None
         self._options["algorithms"] = None
@@ -135,8 +133,6 @@ class QSS:
         reg=True,
         use_iter_refinement=False,
         polish=False,
-        sd_init=False,
-        proj_sd=False,
         descent_method="momentum",
         line_search=True,
         algorithms=["admm"],
@@ -153,8 +149,6 @@ class QSS:
         self._options["reg"] = reg
         self._options["use_iter_refinement"] = use_iter_refinement
         self._options["polish"] = polish
-        self._options["sd_init"] = sd_init
-        self._options["proj_sd"] = proj_sd
         self._options["descent_method"] = descent_method
         self._options["line_search"] = line_search
         self._options["algorithms"] = algorithms
@@ -177,24 +171,6 @@ class QSS:
                         time.time() - precond_start_time
                     )
                 )
-
-        # Using steepest descent to initialize ADMM (only for unconstrained problems)
-        """
-        if self._sd_init and not has_constr:
-            if self._verbose:
-                init_start_time = time.time()
-            xk, sd_iter = polish.steepest_descent(
-                g, xk, P, q, r, equil_scaling, obj_scale, ord=2, max_iter=10
-            )
-            zk = xk
-            uk = -(P @ xk + q) / rho
-            if self._verbose:
-                print(
-                    "### Starting point found in {} seconds using {} iterations. ###".format(
-                        time.time() - init_start_time, sd_iter
-                    )
-                )
-        """
 
         # Constructing KKT matrix
         if self._options["verbose"]:

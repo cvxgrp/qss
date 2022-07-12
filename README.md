@@ -31,11 +31,10 @@ results = solver.solve(eps_abs=1e-4,
                        eps_rel=1e-4,
                        alpha=1.4,
                        rho=0.1,
-                       max_iter=np.inf,
+                       max_iter=[np.inf],
                        precond=True,
                        reg=True,
                        use_iter_refinement=False,
-                       polish=False,
                        verbose=False,
                        )
 ```
@@ -57,7 +56,6 @@ results = solver.solve(eps_abs=1e-4,
 - `precond`: boolean specifying whether to perform matrix equilibration.
 - `reg`: boolean specifying whether to regularize KKT matrix. May fail on certain problem instances if set to `False`.
 - `use_iter_refinement`: boolean, only matters if `reg` is `True`. Helps mitigate some of the accuracy loss due to regularization. 
-- `polish`: boolean specifying whether to attempt to polish the final solution. Still in development, best left as `False` for now. 
 - `verbose`: boolean specifying whether to print verbose output.
 
 ### Returns
