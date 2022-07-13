@@ -114,7 +114,6 @@ class QSS:
         self._options["precond"] = None
         self._options["reg"] = None
         self._options["use_iter_refinement"] = None
-        self._options["polish"] = None
         self._options["descent_method"] = None
         self._options["line_search"] = None
         self._options["algorithms"] = None
@@ -132,7 +131,6 @@ class QSS:
         precond=True,
         reg=True,
         use_iter_refinement=False,
-        polish=False,
         descent_method="momentum",
         line_search=True,
         algorithms=["admm"],
@@ -148,7 +146,6 @@ class QSS:
         self._options["precond"] = precond
         self._options["reg"] = reg
         self._options["use_iter_refinement"] = use_iter_refinement
-        self._options["polish"] = polish
         self._options["descent_method"] = descent_method
         self._options["line_search"] = line_search
         self._options["algorithms"] = algorithms
