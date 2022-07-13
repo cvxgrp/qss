@@ -1,14 +1,15 @@
 # QSS: Quadratic-Separable Solver
 QSS solves problems of the form 
+$$\begin{equation*} \begin{array}{ll} \text{minimize} & (1/2) x^T P x + q^T x + r + g(x) \\\\ \text{subject to} & Ax = b \end{array} \end{equation*}$$
+where $x \in \bf{R}^n$ is the decision variable being optimized over. The
+objective is defined by a positive definite matrix $P \in \bf{S}^n_+$, a vector
+$q \in \bf{R}^n$, a scalar $r \in \bf{R}$, and a $g$ that is separable in the
+entries of $x$, i.e., $g$ can be written as 
+$$g(x) = \sum_{i=1}^n g_i(x_i).$$
+The constraints are defined by a matrix $A \in \bf{R}^{m \times n}$ and a vector
+$b \in \bf{R}^m$. 
 
-``` 
-minimize    f(x) + g(x)
-subject to  Ax = b
-```
-
-Where f is a convex quadratic function given by `f(x) = 0.5 x^T P x + q^T x + r` and g is a function that is separable in each entry of x, i.e. `g(x) = g_1(x_1) + ... + g_n(x_n)`.
-
-To use QSS, the user must specify `P`, `q`, `r`, `A`, `b`, as well as the `g_i` from a built-in collection of separable functions. 
+To use QSS, the user must specify $P$, $q$, $r$, $A$, $b$, as well as the $g_i$ from a built-in collection of separable functions. 
 
 ## Installation
 ```
@@ -20,24 +21,22 @@ After installing `qss`, import it with
 ```python
 import qss
 ```
-This will expose the QSS class which is used to instantiate a solver object. It takes the following arguments:
+This will expose the QSS class which is used to instantiate a solver object:
 ```python
-solver = qss.QSS(data,
-                 eps_abs=1e-4,
-                 eps_rel=1e-4,
-                 alpha=1.4,
-                 rho=0.1,
-                 max_iter=np.inf,
-                 precond=True,
-                 reg=True,
-                 use_iter_refinement=True,
-                 polish=False,
-                 verbose=False,
-                 )
+solver = qss.QSS(data)
 ```
 Use the `solve()` method when ready to solve:
 ```python
-results = solver.solve()
+results = solver.solve(eps_abs=1e-4,
+                       eps_rel=1e-4,
+                       alpha=1.4,
+                       rho=0.1,
+                       max_iter=np.inf,
+                       precond=True,
+                       reg=True,
+                       use_iter_refinement=False,
+                       verbose=False,
+                       )
 ```
 
 ### Parameters
@@ -57,7 +56,6 @@ results = solver.solve()
 - `precond`: boolean specifying whether to perform matrix equilibration.
 - `reg`: boolean specifying whether to regularize KKT matrix. May fail on certain problem instances if set to `False`.
 - `use_iter_refinement`: boolean, only matters if `reg` is `True`. Helps mitigate some of the accuracy loss due to regularization. 
-- `polish`: boolean specifying whether to attempt to polish the final solution. Still in development, best left as `False` for now. 
 - `verbose`: boolean specifying whether to print verbose output.
 
 ### Returns
@@ -67,34 +65,32 @@ A list containing the following:
 
 ### Separable functions
 The following separable functions are supported: 
-- `"zero"`: `g(x) = 0`
-- `"abs"`: `g(x) = |x|`
-- `"is_pos"`: `g(x) = I(x >= 0)`
-- `"is_neg"`: `g(x) = I(x <= 0)`
-- `"is_bound"`: `g(x; lb, ub) = I(lb <= x <= ub)`
+- `"zero"`: $g(x) = 0$
+- `"abs"`: $g(x) = |x|$
+- `"is_pos"`: $g(x) = I(x \geq 0)$
+- `"is_neg"`: $g(x) = I(x \leq 0)$
+- `"is_bound"`: $g(x; lb, ub) = I(lb \leq x \leq ub)$
     - Default: `lb` = 0, `ub` = 1.
-- `"is_zero"`: `g(x) = I(x == 0)`
-- `"pos"`: `g(x) = max{x, 0}`
-- `"neg"`: `g(x) = max{-x, 0}`
-- `"card"`: `g(x) = {0 if x == 0, 1 else}`
-- `"quantile"`: `g(x; tau) = 0.5 * |x| + (tau - 0.5) * x` 
+- `"is_zero"`: $g(x) = I(x == 0)$
+- `"pos"`: $g(x) = \max\\{x, 0\\}$
+- `"neg"`: $g(x) = \max\\{-x, 0\\}$
+- `"card"`: $g(x) = \\{0 \text{ if } x = 0, 1 \text{ else}\\}$
+- `"quantile"`: $g(x; \tau) = 0.5 |x| + (\tau - 0.5) x$ 
     - `tau` in `(0, 1)` is a scalar.
     - Default: `tau = 0.5`.
-- `"huber"`: `g(x; M) = {x^2 if |x| <= M, 2M|x| - M^2 else}`
+- `"huber"`: $g(x; M) = \\{x^2 \text{ if } |x| \leq M, 2M|x| - M^2 \text{ else}\\}$
     - `M > 0` is a scalar.
     - Default: `M = 1`. 
-- `"is_int"`: `g(x) = I(x is an integer)`
-- `"is_finite_set"`: `g(x; S) = I(x is in S)`
+- `"is_int"`: $g(x) = I(x \text{ is an integer})$
+- `"is_finite_set"`: $g(x; S) = I(x \in S)$
     - `S` is a Python set of scalars.
-- `"is_bool"`: `g(x) = I(x in {0,1})`
+- `"is_bool"`: $g(x) = I(x \in \\{0,1\\})$
 
 The `t` (weight), `a` (scale), `b` (shift) parameters are used to shift and scale the above as follows: `t * g(ax - b)`.
 
 ### Example
 Nonnegative least squares is a problem of the form
-```
-minimize 0.5 * ||Gx - h||_2^2 subject to x >= 0
-```
+$$\begin{equation*} \begin{array}{ll} \text{minimize} & (1/2) \Vert Gx - h \Vert_2^2 \\\\ \text{subject to} & x \geq 0. \end{array} \end{equation*} $$
 `qss` can be used to solve this problem as follows:
 ```python
 import numpy as np

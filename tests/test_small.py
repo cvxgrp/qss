@@ -30,9 +30,10 @@ def test_nonneg_ls(_verbose):
     prob = cp.Problem(objective, constraints)
 
     # QSS
-    solver = qss.QSS(data, verbose=_verbose)
+    solver = qss.QSS(data)
+    qss_result, x_qss = solver.solve(verbose=_verbose)
 
-    assert prob.solve() == pytest.approx(solver.solve()[0], rel=1e-2)
+    assert prob.solve() == pytest.approx(qss_result, rel=1e-2)
 
 
 def test_quantile_regression(_verbose):
@@ -64,9 +65,10 @@ def test_quantile_regression(_verbose):
     prob = cp.Problem(objective, constraints)
 
     # QSS
-    solver = qss.QSS(data, verbose=_verbose)
+    solver = qss.QSS(data)
+    qss_result, x_qss = solver.solve(verbose=_verbose)
 
-    assert prob.solve() == pytest.approx(solver.solve()[0], rel=1e-2)
+    assert prob.solve() == pytest.approx(qss_result, rel=1e-2)
 
 
 def test_huber_regression(_verbose):
@@ -96,9 +98,10 @@ def test_huber_regression(_verbose):
     prob = cp.Problem(objective, constraints)
 
     # QSS
-    solver = qss.QSS(data, verbose=_verbose)
+    solver = qss.QSS(data)
+    qss_result, x_qss = solver.solve(verbose=_verbose)
 
-    assert prob.solve() == pytest.approx(solver.solve()[0], rel=1e-2)
+    assert prob.solve() == pytest.approx(qss_result, rel=1e-2)
 
 
 def test_l0_ls(_verbose):
@@ -119,8 +122,10 @@ def test_l0_ls(_verbose):
     data["P"] = sp.sparse.csc_matrix(data["P"])
     data["A"] = sp.sparse.csc_matrix(data["A"])
 
-    solver = qss.QSS(data, max_iter=1000, verbose=_verbose)
-    qss_result, x_qss = solver.solve()
+    solver = qss.QSS(data)
+    qss_result, x_qss = solver.solve(
+        algorithms=["admm"], max_iter=1000, verbose=_verbose
+    )
 
     # Regression test as CVXPY can't solve this problem
     # assert pytest.approx(qss_result, rel=1e-2) == 19.945084341967263
@@ -144,8 +149,10 @@ def test_int_ls(_verbose):
     data["P"] = sp.sparse.csc_matrix(data["P"])
     data["A"] = sp.sparse.csc_matrix(data["A"])
 
-    solver = qss.QSS(data, max_iter=1000, rho=1e-5, verbose=_verbose)
-    qss_result, x_qss = solver.solve()
+    solver = qss.QSS(data)
+    qss_result, x_qss = solver.solve(
+        algorithms=["admm"], max_iter=1000, rho=1e-5, verbose=_verbose
+    )
 
     # Regression test as CVXPY can't solve this problem
     assert pytest.approx(qss_result, rel=1e-2) == 694195.2486268306
@@ -172,8 +179,10 @@ def test_finite_set_regression(_verbose):
     data["P"] = sp.sparse.csc_matrix(data["P"])
     data["A"] = sp.sparse.csc_matrix(data["A"])
 
-    solver = qss.QSS(data, max_iter=1000, rho=1e-10, verbose=_verbose)
-    qss_result, x_qss = solver.solve()
+    solver = qss.QSS(data)
+    qss_result, x_qss = solver.solve(
+        algorithms=["admm"], max_iter=1000, rho=1e-10, verbose=_verbose
+    )
 
     # Regression test as CVXPY can't solve this problem
     assert pytest.approx(qss_result, rel=1e-2) == 792202.3536915448
@@ -206,9 +215,10 @@ def test_l1_trend_filtering(_verbose):
     prob = cp.Problem(objective, constraints)
 
     # QSS
-    solver = qss.QSS(data, verbose=_verbose)
+    solver = qss.QSS(data)
+    qss_result, x_qss = solver.solve(verbose=_verbose)
 
-    assert prob.solve() == pytest.approx(solver.solve()[0], rel=1e-2)
+    assert prob.solve() == pytest.approx(qss_result, rel=1e-2)
 
 
 def test_lp(_verbose):
@@ -238,9 +248,10 @@ def test_lp(_verbose):
     prob = cp.Problem(objective, constraints)
 
     # QSS
-    solver = qss.QSS(data, verbose=_verbose)
+    solver = qss.QSS(data)
+    qss_result, x_qss = solver.solve(verbose=_verbose)
 
-    assert prob.solve() == pytest.approx(solver.solve()[0], abs=1e-2)
+    assert prob.solve() == pytest.approx(qss_result, abs=1e-2)
 
 
 def test_quadratic_control(_verbose):
@@ -308,6 +319,7 @@ def test_quadratic_control(_verbose):
         }
     ]
 
-    solver = qss.QSS(data, verbose=_verbose)
+    solver = qss.QSS(data)
+    qss_result, x_qss = solver.solve(verbose=_verbose)
 
-    assert prob.solve() == pytest.approx(solver.solve()[0], rel=1e-2)
+    assert prob.solve() == pytest.approx(qss_result, rel=1e-2)

@@ -2,9 +2,9 @@ import numpy as np
 import scipy as sp
 
 
-def ruiz(P, q, r, A, b):
-    dim = P.shape[0]
-    constr_dim = A.shape[0]
+def ruiz(data, scaling):
+    dim = data["dim"]
+    constr_dim = data["constr_dim"]
     eps_equil = 1e-4
 
     c = 1
@@ -12,11 +12,11 @@ def ruiz(P, q, r, A, b):
     S2 = sp.sparse.identity(constr_dim)
     delta1 = np.zeros(dim)
     delta2 = np.zeros(constr_dim)
-    Pbar = P.copy()
-    qbar = np.copy(q)
-    Abar = A.copy()
-    bbar = np.copy(b)
-    rbar = r
+    Pbar = data["P"]
+    qbar = data["q"]
+    Abar = data["A"]
+    bbar = data["b"]
+    rbar = data["r"]
 
     while (
         np.linalg.norm(1 - delta1, ord=np.inf) > eps_equil
@@ -42,12 +42,12 @@ def ruiz(P, q, r, A, b):
         bbar = Delta2 @ bbar
 
         # TODO: Look into whether this is beneficial or not
-        # gamma = 1 / max(
-        #     # TODO: this is redundant - will be calculated in the next iter too
-        #     np.mean(sp.sparse.linalg.norm(Pbar, ord=np.inf, axis=0)),
-        #     np.linalg.norm(qbar, ord=np.inf),
-        # )
-        gamma = 1
+        gamma = 1 / max(
+            # TODO: this is redundant - will be calculated in the next iter too
+            np.mean(sp.sparse.linalg.norm(Pbar, ord=np.inf, axis=0)),
+            np.linalg.norm(qbar, ord=np.inf),
+        )
+        # gamma = 1
 
         Pbar *= gamma
         qbar *= gamma
@@ -58,4 +58,11 @@ def ruiz(P, q, r, A, b):
 
         c *= gamma
 
-    return (Pbar, qbar, rbar, Abar, bbar, S1.diagonal(), c)
+    data["P"] = Pbar
+    data["q"] = qbar
+    data["r"] = rbar
+    data["A"] = Abar
+    data["b"] = bbar
+
+    scaling["equil_scaling"] = S1.diagonal()
+    scaling["obj_scale"] = c

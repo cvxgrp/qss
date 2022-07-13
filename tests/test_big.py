@@ -45,9 +45,10 @@ def test_l1_trend_filtering_big(_verbose):
     data["b"] = np.zeros(T - 2)
     data["g"] = [{"g": "abs", "range": (T, 2 * T - 2)}]
     data["A"] = sp.sparse.hstack([lmda * D, -sp.sparse.identity(T - 2)])
-    solver = qss.QSS(data, alpha=1.8, rho=0.005, verbose=_verbose)
+    solver = qss.QSS(data)
+    options = {"alpha": 1.8, "rho": 0.005, "verbose": _verbose}
 
-    qss_res = testutil.compare_qss_cvxpy(prob, solver)
+    qss_res = testutil.compare_qss_cvxpy(prob, solver, options)
 
     print("Real objective values:")
     print(
@@ -87,9 +88,10 @@ def test_lp_big(_verbose):
     prob = cp.Problem(objective, constraints)
 
     # QSS
-    solver = qss.QSS(data, verbose=_verbose)
+    solver = qss.QSS(data)
+    options = {"verbose": _verbose}
 
-    qss_res = testutil.compare_qss_cvxpy(prob, solver)
+    qss_res = testutil.compare_qss_cvxpy(prob, solver, options)
 
 
 def test_quadratic_control_big(_verbose):
@@ -157,6 +159,7 @@ def test_quadratic_control_big(_verbose):
         }
     ]
 
-    solver = qss.QSS(data, verbose=_verbose, eps_abs=1e-7, eps_rel=1e-7)
+    solver = qss.QSS(data)
+    options = {"eps_abs": 1e-7, "eps_rel": 1e-7, "verbose": _verbose}
 
-    qss_res = testutil.compare_qss_cvxpy(prob, solver)
+    qss_res = testutil.compare_qss_cvxpy(prob, solver, options)
