@@ -209,6 +209,13 @@ def admm(data, kkt_info, options, x, y, equil_scaling, obj_scale, **kwargs):
         zk = zk1
         uk = uk1
 
+    iterates = {}
+    iterates["x"] = zk1
+    iterates["y"] = rho * uk1
+    iterates["obj_val"] = util.evaluate_objective(
+        P, q, r, g, zk1, obj_scale, equil_scaling
+    )
+
     if verbose:
         util.print_footer()
         print(
@@ -220,9 +227,6 @@ def admm(data, kkt_info, options, x, y, equil_scaling, obj_scale, **kwargs):
         print(
             "Spent total {} seconds refactorizing.".format(total_refactorization_time)
         )
+        print("Objective value: {}".format(iterates["obj_val"]))
 
-    return {
-        "x": zk1,
-        "y": rho * uk1,  # TODO: Does y need to be scaled by equil_scaling or obj_scale?
-        "obj_val": util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling),
-    }
+    return iterates

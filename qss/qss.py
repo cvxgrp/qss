@@ -86,22 +86,20 @@ class QSS:
             self._data["has_constr"] = True
             self._data["constr_dim"] = data["A"].shape[0]
 
+        # Unscaled data
+        self._unscaled_data = {}
+
         # Scaling information
         self._scaling = {}
-        self._scaling["equil_scaling"] = np.ones(self._data["dim"])
-        self._scaling["obj_scale"] = 1
+        self._reset_scaling()
 
         # Iterate information
         self._iterates = {}
-        self._iterates["x"] = np.zeros(self._data["dim"])
-        self._iterates["y"] = np.zeros(self._data["dim"])
-        self._iterates["obj_val"] = None
+        self._reset_iterates()
 
         # KKT system information
         self._kkt_info = {}
-        self._kkt_info["quad_kkt"] = None
-        self._kkt_info["quad_kkt_unreg"] = None
-        self._kkt_info["F"] = None
+        self._reset_kkt_info()
 
         # User-specified options
         self._options = {}
@@ -112,6 +110,7 @@ class QSS:
         self._options["adaptive_rho"] = None
         self._options["max_iter"] = None
         self._options["precond"] = None
+        self._options["warm_start"] = None
         self._options["reg"] = None
         self._options["use_iter_refinement"] = None
         self._options["descent_method"] = None
@@ -119,6 +118,22 @@ class QSS:
         self._options["algorithms"] = None
         self._options["verbose"] = None
         return
+
+    def _reset_scaling(self):
+        self._scaling["equil_scaling"] = np.ones(self._data["dim"])
+        self._scaling["obj_scale"] = 1
+
+    def _reset_iterates(self):
+        self._iterates["x"] = np.zeros(self._data["dim"])
+        self._iterates["y"] = np.zeros(self._data["dim"])
+        self._iterates["obj_val"] = None
+
+    def _reset_kkt_info(self):
+        # TODO: should we be checking to see if these keys exist and if so
+        # calling `del` on them?
+        self._kkt_info["quad_kkt"] = None
+        self._kkt_info["quad_kkt_unreg"] = None
+        self._kkt_info["F"] = None
 
     def solve(
         self,
@@ -129,6 +144,7 @@ class QSS:
         adaptive_rho=True,
         max_iter=[np.inf],
         precond=True,
+        warm_start=False,
         reg=True,
         use_iter_refinement=False,
         descent_method="momentum",
@@ -144,6 +160,7 @@ class QSS:
         self._options["adaptive_rho"] = adaptive_rho
         self._options["max_iter"] = max_iter
         self._options["precond"] = precond
+        self._options["warm_start"] = warm_start
         self._options["reg"] = reg
         self._options["use_iter_refinement"] = use_iter_refinement
         self._options["descent_method"] = descent_method
@@ -155,13 +172,20 @@ class QSS:
             util.print_info()
             start_time = time.time()
 
+        # Reset problem parameters if not warm starting
+        if not self._options["warm_start"]:
+            self._reset_iterates()
+
         # Preconditioning
         if self._options["precond"]:
             if self._options["verbose"]:
                 precond_start_time = time.time()
+            self._unscaled_data = copy.deepcopy(self._data)
             # We are now solving for xtilde, where x = equil_scaling * xtilde
             # Note: the below will modify the contents of self._data
             precondition.ruiz(self._data, self._scaling)
+            self._iterates["x"] /= self._scaling["equil_scaling"]
+            self._iterates["y"] *= self._scaling["obj_scale"]
             if self._options["verbose"]:
                 print(
                     "### Preconditioning finished in {} seconds. ###".format(
@@ -227,10 +251,21 @@ class QSS:
 
         self._options["max_iter"] = max_iter_list
 
+        # Clean up preconditioning
+        if self._options["precond"]:
+            self._iterates["x"] *= self._scaling["equil_scaling"]
+            self._iterates["y"] /= self._scaling["obj_scale"]
+            # TODO: should we del self._data first?
+            self._data = self._unscaled_data
+            self._reset_scaling()
+
+        # Clean up
+        self._reset_kkt_info()
+
         if self._options["verbose"]:
             print("Total solve time {} seconds.".format(time.time() - start_time))
 
         return (
             self._iterates["obj_val"],
-            self._scaling["equil_scaling"] * self._iterates["x"],
+            np.copy(self._iterates["x"]),
         )
