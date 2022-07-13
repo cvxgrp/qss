@@ -33,6 +33,7 @@ results = solver.solve(eps_abs=1e-4,
                        rho=0.1,
                        max_iter=np.inf,
                        precond=True,
+                       warm_start=False,
                        reg=True,
                        use_iter_refinement=False,
                        verbose=False,
@@ -54,6 +55,8 @@ results = solver.solve(eps_abs=1e-4,
 - `rho`: scalar specifying ADMM step size.
 - `max_iter`: maximum number of ADMM iterations to perform.
 - `precond`: boolean specifying whether to perform matrix equilibration.
+- `warm_start`: boolean specifying whether to warm start upon a repeat call of
+  `solve()`.
 - `reg`: boolean specifying whether to regularize KKT matrix. May fail on certain problem instances if set to `False`.
 - `use_iter_refinement`: boolean, only matters if `reg` is `True`. Helps mitigate some of the accuracy loss due to regularization. 
 - `verbose`: boolean specifying whether to print verbose output.

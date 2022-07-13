@@ -323,3 +323,71 @@ def test_quadratic_control(_verbose):
     qss_result, x_qss = solver.solve(verbose=_verbose)
 
     assert prob.solve() == pytest.approx(qss_result, rel=1e-2)
+
+
+def test_warm_start_unconstrained(_verbose):
+    np.random.seed(1234)
+    p = 100
+    n = 500
+    G = np.random.rand(n, p)
+    h = np.random.rand(n)
+
+    data = {}
+    data["P"] = G.T @ G
+    data["q"] = -h.T @ G
+    data["r"] = 0.5 * h.T @ h
+    data["A"] = np.zeros((1, p))
+    data["b"] = np.zeros(1)
+    data["g"] = [{"g": "is_pos", "args": {}, "range": (0, p // 2)}]
+
+    data["P"] = sp.sparse.csc_matrix(data["P"])
+    data["A"] = sp.sparse.csc_matrix(data["A"])
+
+    # Test cold start gets same objective
+    solver = qss.QSS(data)
+    qss_result, x_qss = solver.solve(verbose=_verbose)
+    qss_result2, x_qss2 = solver.solve(verbose=_verbose)
+    assert qss_result == qss_result2
+
+    # Test one iteration of warm start is close
+    solver = qss.QSS(data)
+    qss_result, x_qss = solver.solve(verbose=_verbose)
+    qss_result2, x_qss2 = solver.solve(verbose=_verbose, warm_start=True, max_iter=1)
+    print(qss_result, qss_result2)
+    print(x_qss - x_qss2)
+    assert np.isclose(qss_result, qss_result2)
+    assert np.all(np.isclose(x_qss, x_qss2, atol=1e-4))
+
+
+def test_warm_start_constrained(_verbose):
+    np.random.seed(1234)
+    p = 100
+    n = 500
+    G = np.random.rand(n, p)
+    h = np.random.rand(n)
+
+    data = {}
+    data["P"] = G.T @ G
+    data["q"] = -h.T @ G
+    data["r"] = 0.5 * h.T @ h
+    data["A"] = np.random.rand(1, p)
+    data["b"] = np.zeros(1)
+    data["g"] = [{"g": "is_pos", "args": {}, "range": (0, p // 2)}]
+
+    data["P"] = sp.sparse.csc_matrix(data["P"])
+    data["A"] = sp.sparse.csc_matrix(data["A"])
+
+    # Test cold start gets same objective
+    solver = qss.QSS(data)
+    qss_result, x_qss = solver.solve(verbose=_verbose)
+    qss_result2, x_qss2 = solver.solve(verbose=_verbose)
+    assert qss_result == qss_result2
+
+    # Test one iteration of warm start is close
+    solver = qss.QSS(data)
+    qss_result, x_qss = solver.solve(verbose=_verbose)
+    qss_result2, x_qss2 = solver.solve(verbose=_verbose, warm_start=True, max_iter=1)
+    print(qss_result, qss_result2)
+    print(x_qss - x_qss2)
+    assert np.isclose(qss_result, qss_result2, atol=0.2)
+    assert np.all(np.isclose(x_qss, x_qss2, atol=1e-3))
