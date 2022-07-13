@@ -196,6 +196,10 @@ class QSS:
         max_iter_list = self._options[
             "max_iter"
         ]  # TODO get rid of this or make more elegant
+        if type(max_iter_list) is int:
+            max_iter_list = [max_iter_list]
+        if type(max_iter_list) is not list:
+            raise ValueError("max_iter should be an integer or a list.")
         for i, algorithm in enumerate(algorithms):
             if i == 0 and algorithm == "proj_sd":
                 self._iterates["x"] = sp.sparse.linalg.lsqr(

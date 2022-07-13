@@ -124,7 +124,7 @@ def test_l0_ls(_verbose):
 
     solver = qss.QSS(data)
     qss_result, x_qss = solver.solve(
-        algorithms=["admm"], max_iter=[1000], verbose=_verbose
+        algorithms=["admm"], max_iter=1000, verbose=_verbose
     )
 
     # Regression test as CVXPY can't solve this problem
@@ -151,7 +151,7 @@ def test_int_ls(_verbose):
 
     solver = qss.QSS(data)
     qss_result, x_qss = solver.solve(
-        algorithms=["admm"], max_iter=[1000], rho=1e-5, verbose=_verbose
+        algorithms=["admm"], max_iter=1000, rho=1e-5, verbose=_verbose
     )
 
     # Regression test as CVXPY can't solve this problem
@@ -181,7 +181,7 @@ def test_finite_set_regression(_verbose):
 
     solver = qss.QSS(data)
     qss_result, x_qss = solver.solve(
-        algorithms=["admm"], max_iter=[1000], rho=1e-10, verbose=_verbose
+        algorithms=["admm"], max_iter=1000, rho=1e-10, verbose=_verbose
     )
 
     # Regression test as CVXPY can't solve this problem

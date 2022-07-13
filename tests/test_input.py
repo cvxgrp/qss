@@ -82,3 +82,23 @@ class Testg:
         with pytest.raises(ValueError) as exc_info:
             qss.QSS(self.data)
         print(exc_info.value)
+
+
+class TestOptions:
+    data = {}
+    data["P"] = sp.sparse.eye(100)
+    data["q"] = np.ones(100)
+    data["r"] = 10
+    data["A"] = sp.sparse.csc_matrix(sp.sparse.eye(100))[:50, :]
+    data["b"] = np.ones(50)
+    data["g"] = [{"g": "is_pos", "range": (10, 20)}, {"g": "huber", "range": (30, 50)}]
+    solver = qss.QSS(data)
+
+    def test_bad_max_iter(self):
+        with pytest.raises(ValueError) as exc_info:
+            self.solver.solve(max_iter=100.0)
+        print(exc_info.value)
+
+        with pytest.raises(ValueError) as exc_info:
+            self.solver.solve(max_iter="100")
+        print(exc_info.value)
