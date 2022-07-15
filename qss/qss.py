@@ -243,8 +243,8 @@ class QSS:
                     self._data,
                     self._kkt_info,
                     self._options,
+                    self._scaling,
                     **self._iterates,
-                    **self._scaling,
                 )
             else:
                 raise ValueError("Invalid algorithm specified")

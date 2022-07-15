@@ -80,7 +80,7 @@ def update_rho(
     )
 
 
-def admm(data, kkt_info, options, x, y, equil_scaling, obj_scale, **kwargs):
+def admm(data, kkt_info, options, scaling, x, y, **kwargs):
     if options["verbose"]:
         print(" #####     Beginning ADMM solve     #####")
         util.print_header()
@@ -106,6 +106,9 @@ def admm(data, kkt_info, options, x, y, equil_scaling, obj_scale, **kwargs):
     verbose = options["verbose"]
     max_iter = options["max_iter"]
 
+    equil_scaling = scaling["equil_scaling"]
+    obj_scale = scaling["obj_scale"]
+
     # ADMM iterates
     zk = x
     uk = y / rho  # TODO: do smth with equil_scaling/obj_scale here?
@@ -113,7 +116,7 @@ def admm(data, kkt_info, options, x, y, equil_scaling, obj_scale, **kwargs):
     xk1 = np.zeros(dim)
     zk1 = np.zeros(dim)
     uk1 = np.zeros(dim)
-    nuk1 = np.zeros(dim)
+    nuk1 = np.zeros(constr_dim)
 
     iter_num = 0
     refactorization_count = 0
@@ -158,18 +161,21 @@ def admm(data, kkt_info, options, x, y, equil_scaling, obj_scale, **kwargs):
         # Check if we should stop
         if iter_num == max_iter or (
             iter_num % 10 == 0
-            and util.evaluate_stop_crit(
-                xk1,
-                zk,
-                zk1,
-                uk1,
-                dim,
-                rho,
-                eps_abs,
-                eps_rel,
-                P,
-                q,
-                ord=2,
+            # and util.evaluate_stop_crit(
+            #     xk1,
+            #     zk,
+            #     zk1,
+            #     uk1,
+            #     dim,
+            #     rho,
+            #     eps_abs,
+            #     eps_rel,
+            #     P,
+            #     q,
+            #     ord=2,
+            # )
+            and util.evaluate_stop_crit_orig(
+                xk1, zk1, nuk1, eps_abs, eps_rel, data, scaling
             )
         ):
             finished = True

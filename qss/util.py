@@ -34,6 +34,54 @@ def evaluate_stop_crit(xk1, zk, zk1, uk1, dim, rho, eps_abs, eps_rel, P, q, ord=
         return False
 
 
+def evaluate_stop_crit_orig(xk, zk, nuk, eps_abs, eps_rel, data, scaling, ord=2):
+    P = data["P"]
+    q = data["q"]
+    r = data["r"]
+    g = data["g"]
+    A = data["A"]
+    b = data["b"]
+    dim = data["dim"]
+    has_constr = data["has_constr"]
+    equil_scaling = scaling["equil_scaling"]
+    obj_scale = scaling["obj_scale"]
+
+    # TODO: Use xk or zk?
+    Azk = A @ zk
+    Pzk = P @ zk
+    ATnuk = A.T @ nuk
+
+    # Primal residual
+    if has_constr:  # TODO: make more elegant
+        rprim = np.linalg.norm(Azk - b, ord=ord)
+    else:
+        rprim = 0
+
+    # Getting dual residual
+    target = -(Pzk + q + ATnuk)
+    best_subdiff = np.copy(target)
+    ls, rs = proximal.get_subdiff(g, zk, equil_scaling, obj_scale)
+    best_subdiff[target > rs] = rs[target > rs]
+    best_subdiff[target < ls] = ls[target < ls]
+    rdual = np.linalg.norm(best_subdiff - target, ord=ord)
+
+    eps_prim = eps_abs + eps_rel * max(
+        np.linalg.norm(Azk, ord=ord), np.linalg.norm(zk, ord=ord)
+    )
+    eps_dual = eps_abs + eps_rel * max(
+        np.linalg.norm(Pzk, ord=ord),
+        np.linalg.norm(ATnuk, ord=ord),
+        np.linalg.norm(q, ord=ord),
+    )
+
+    # print("rprim: {}, eps_prim: {}".format(rprim, eps_prim))
+    # print("rdual: {}, eps_dual: {}".format(rdual, eps_dual))
+    if rprim <= eps_prim and rdual <= eps_dual:
+        return True
+
+    return False
+
+
 def print_info():
     print("---------------------------------------------------------------")
     print("              QSS: the Quadratic-Separable Solver              ")
