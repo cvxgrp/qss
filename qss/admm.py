@@ -154,9 +154,31 @@ def admm(data, kkt_info, options, scaling, x, y, **kwargs):
         uk1 = uk + alpha * xk1 + (1 - alpha) * zk - zk1
 
         # Calculate residuals and objective
-        r_prim = np.linalg.norm(xk1 - zk1, ord=np.inf)
-        r_dual = np.linalg.norm(rho * (zk - zk1), ord=np.inf)
+        # r_prim = np.linalg.norm(xk1 - zk1, ord=np.inf)
+        # r_dual = np.linalg.norm(rho * (zk - zk1), ord=np.inf)
         obj_val = util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling)
+
+        ord = np.inf
+        # TODO: Use xk or zk?
+        Azk1 = A @ zk1
+        Pzk1 = P @ zk1
+        ATnuk1 = A.T @ nuk1
+
+        # print("Azk1.shape:", Azk1.shape)
+        # print("b.shape:", b.shape)
+        # Primal residual
+        if has_constr:  # TODO: make more elegant
+            r_prim = np.linalg.norm(Azk1 - b, ord=ord)
+        else:
+            r_prim = 0
+
+        # Getting dual residual
+        target = -(Pzk1 + q + ATnuk1)
+        best_subdiff = np.copy(target)
+        ls, rs = proximal.get_subdiff(g, zk, equil_scaling, obj_scale)
+        best_subdiff[target > rs] = rs[target > rs]
+        best_subdiff[target < ls] = ls[target < ls]
+        r_dual = np.linalg.norm(best_subdiff - target, ord=ord)
 
         # Check if we should stop
         if iter_num == max_iter or (

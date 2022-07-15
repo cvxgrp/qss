@@ -34,7 +34,7 @@ def evaluate_stop_crit(xk1, zk, zk1, uk1, dim, rho, eps_abs, eps_rel, P, q, ord=
         return False
 
 
-def evaluate_stop_crit_orig(xk, zk, nuk, eps_abs, eps_rel, data, scaling, ord=2):
+def evaluate_stop_crit_orig(xk, zk, nuk, eps_abs, eps_rel, data, scaling, ord=np.inf):
     P = data["P"]
     q = data["q"]
     r = data["r"]
