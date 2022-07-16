@@ -83,6 +83,25 @@ class Testg:
             qss.QSS(self.data)
         print(exc_info.value)
 
+    def test_overlap(self):
+        self.data["g"] = [
+            {"g": "abs", "range": (0, 10)},
+            {"g": "abs", "range": (10, 20)},
+            {"g": "abs", "range": (35, 45)},
+            {"g": "abs", "range": (30, 35)},
+        ]
+        qss.QSS(self.data)
+
+        self.data["g"] = [
+            {"g": "abs", "range": (0, 10)},
+            {"g": "abs", "range": (10, 20)},
+            {"g": "abs", "range": (35, 45)},
+            {"g": "abs", "range": (30, 36)},
+        ]
+        with pytest.raises(ValueError) as exc_info:
+            qss.QSS(self.data)
+        print(exc_info.value)
+
 
 class TestOptions:
     data = {}

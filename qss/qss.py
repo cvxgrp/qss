@@ -49,6 +49,7 @@ class QSS:
                 raise ValueError("Constraint matrix not specified.")
 
         # Checking g functions
+        ranges = []
         for g in data["g"]:
             if g["g"] not in proximal.g_funcs:
                 raise ValueError("Invalid g function name:", g["g"])
@@ -64,6 +65,11 @@ class QSS:
                 raise ValueError("Range out of bounds.")
             if g["range"][0] > g["range"][1]:
                 raise ValueError("Start index must be <= end index.")
+            ranges.append(g["range"])
+        ranges = sorted(ranges, key=lambda x: x[0])
+        for i in range(len(ranges) - 1):
+            if ranges[i][1] > ranges[i + 1][0]:
+                raise ValueError("g function ranges must not overlap.")
 
         # Making copies of the input data and storing
         self._data["P"] = data["P"].copy()
