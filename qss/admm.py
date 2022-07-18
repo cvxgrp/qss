@@ -143,8 +143,8 @@ def admm(data, kkt_info, options, x, y, equil_scaling, obj_scale, **kwargs):
             xk1 = kkt_info["F"].solve(-q + rho * (zk - uk))
 
         # Update z
-        zk1 = proximal.apply_prox_ops(
-            rho / obj_scale, equil_scaling, g, alpha * xk1 + (1 - alpha) * zk + uk
+        zk1 = g.prox(
+            rho / obj_scale, equil_scaling, alpha * xk1 + (1 - alpha) * zk + uk
         )
 
         # Update u

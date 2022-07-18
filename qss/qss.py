@@ -51,7 +51,7 @@ class QSS:
         # Checking g functions
         ranges = []
         for g in data["g"]:
-            if g["g"] not in proximal.g_funcs:
+            if g["g"] not in proximal.G_FUNC_NAMES:
                 raise ValueError("Invalid g function name:", g["g"])
             if "args" in g:
                 if "weight" in "args":
@@ -75,7 +75,7 @@ class QSS:
         self._data["P"] = data["P"].copy()
         self._data["q"] = np.copy(data["q"])
         self._data["r"] = data["r"]
-        self._data["g"] = copy.deepcopy(data["g"])
+        self._data["g"] = proximal.GCollection(data["g"])
 
         if ("A" not in data) or (data["A"] is None) or (data["A"].nnz == 0):
             # TODO: get rid of this placeholder when QSS is more object-oriented, i.e.,
