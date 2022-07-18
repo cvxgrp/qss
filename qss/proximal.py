@@ -313,23 +313,21 @@ class GCollection:
         self._is_convex = True
 
         for g in g_list:
-            if ("args" not in g) or (g["args"] is None):
-                weight = 1
-                scale = 1
-                shift = 0
+            weight = 1
+            scale = 1
+            shift = 0
+            if "args" in g and "weight" in g["args"]:
+                weight = g["args"]["weight"]
             else:
-                if "args" in g and "weight" in g["args"]:
-                    weight = g["args"]["weight"]
-                else:
-                    weight = 1
-                if "args" in g and "scale" in g["args"]:
-                    scale = g["args"]["scale"]
-                else:
-                    scale = 1
-                if "args" in g and "shift" in g["args"]:
-                    shift = g["args"]["shift"]
-                else:
-                    shift = 0
+                weight = 1
+            if "args" in g and "scale" in g["args"]:
+                scale = g["args"]["scale"]
+            else:
+                scale = 1
+            if "args" in g and "shift" in g["args"]:
+                shift = g["args"]["shift"]
+            else:
+                shift = 0
             range = g["range"]
             name = g["g"]
 
