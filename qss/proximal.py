@@ -5,8 +5,8 @@ G_FUNC_NAMES = {
     "zero",
     "abs",
     "is_pos",
-    # "is_neg",
-    # "is_bound",
+    "is_neg",
+    "is_bound",
     # "is_zero",
     # "pos",
     # "neg",
@@ -115,14 +115,146 @@ class IsPos(G):
         return np.where(v < 0, 0, v)
 
     def subdiff_raw(self, v):
-        v = np.asarray(v)
-        ls = np.zeros(len(v))
-        rs = np.zeros(len(v))
+        ls = np.zeros_like(v)
+        rs = np.zeros_like(v)
 
         ls[v < 0] = np.nan
         rs[v < 0] = np.nan
 
         ls[v == 0] = -np.inf
+        rs[v == 0] = 0
+
+        return ls, rs
+
+
+class IsNeg(G):
+    def __init__(self, weight, scale, shift):
+        super().__init__(weight, scale, shift)
+        self._is_convex = True
+
+    def evaluate_raw(self, v):
+        v = np.asarray(v)
+        return np.where(v <= 0, 0, v)
+
+    def prox_raw(self, rho, v):
+        v = np.asarray(v)
+        return np.where(v > 0, 0, v)
+
+    def subdiff_raw(self, v):
+        ls = np.zeros_like(v)
+        rs = np.zeros_like(v)
+
+        ls[v > 0] = np.nan
+        rs[v > 0] = np.nan
+
+        ls[v == 0] = 0
+        rs[v == 0] = np.inf
+
+        return ls, rs
+
+
+class IsBound(G):
+    def __init__(self, weight, scale, shift, lb, ub):
+        super().__init__(weight, scale, shift)
+        self._lb = lb
+        self._ub = ub
+        self._is_convex = True
+
+    def evaluate_raw(self, v):
+        return np.where((v >= self._lb) & (v <= self._ub), 0, np.inf)
+
+    def prox_raw(self, rho, v):
+        output = np.where(v >= self._ub, self._ub, v)
+        output = np.where(output <= self._lb, self._lb, output)
+        return output
+
+    def subdiff_raw(self, v):
+        ls = np.zeros_like(v)
+        rs = np.zeros_like(v)
+
+        ls[v > self._ub] = np.nan
+        rs[v > self._ub] = np.nan
+
+        ls[v == self._ub] = 0
+        rs[v == self._ub] = np.inf
+
+        ls[v < self._lb] = np.nan
+        rs[v < self._lb] = np.nan
+
+        ls[v == self._lb] = -np.inf
+        rs[v == self._lb] = 0
+
+        return ls, rs
+
+
+class IsZero(G):
+    def __init__(self, weight, scale, shift):
+        super().__init__(weight, scale, shift)
+        self._is_convex = True
+
+    def evaluate_raw(self, v):
+        return np.where(v == 0, 0, np.inf)
+
+    def prox_raw(self, rho, v):
+        return np.zeros_like(v)
+
+    def subdiff_raw(self, v):
+        ls = np.nan * np.ones_like(v)
+        rs = np.nan * np.ones_like(v)
+
+        ls[v == 0] = -np.inf
+        rs[v == 0] = np.inf
+
+        return ls, rs
+
+
+class Pos(G):
+    def __init__(self, weight, scale, shift):
+        super().__init__(weight, scale, shift)
+        self._is_convex = True
+
+    def evaluate_raw(self, v):
+        return np.maximum(v, 0)
+
+    def prox_raw(self, rho, v):
+        output = np.where(v <= 0, v, 0)
+        output = np.where(v > 1 / rho, v - 1 / rho, output)
+        return output
+
+    def subdiff_raw(self, v):
+        ls = np.zeros_like(v)
+        rs = np.zeros_like(v)
+
+        ls[v > 0] = 1
+        rs[v > 0] = 1
+
+        # TODO: change this to is_close?
+        ls[v == 0] = 0
+        rs[v == 0] = 1
+
+        return ls, rs
+
+
+class Neg(G):
+    def __init__(self, weight, scale, shift):
+        super().__init__(weight, scale, shift)
+        self._is_convex = True
+
+    def evaluate_raw(self, v):
+        return np.maximum(-v, 0)
+
+    def prox_raw(self, rho, v):
+        return np.where(v < -1 / rho, v + 1 / rho, v)
+
+    def subdiff_raw(self, v):
+        ls = np.zeros_like(v)
+        rs = np.zeros_like(v)
+
+        ls[v < 0] = -1
+        rs[v < 0] = -1
+
+        # TODO: change this to is_close?
+        ls[v == 0] = -1
         rs[v == 0] = 0
 
         return ls, rs
@@ -337,6 +469,24 @@ class GCollection:
                 func = Abs(weight, scale, shift)
             elif name == "is_pos":
                 func = IsPos(weight, scale, shift)
+            elif name == "is_neg":
+                func = IsNeg(weight, scale, shift)
+            elif name == "is_bound":
+                if "args" in g and "lb" in g["args"]:
+                    lb = g["args"]["lb"]
+                else:
+                    lb = 0
+                if "args" in g and "ub" in g["args"]:
+                    ub = g["args"]["ub"]
+                else:
+                    ub = 1
+                func = IsBound(weight, scale, shift, lb, ub)
+            elif name == "is_zero":
+                func = IsZero(weight, scale, shift)
+            elif name == "pos":
+                func = Pos(weight, scale, shift)
+            elif name == "neg":
+                func = Neg(weight, scale, shift)
             elif name == "card":
                 func = Card(weight, scale, shift)
             elif name == "quantile":
@@ -404,175 +554,3 @@ class GCollection:
             rs[start_index:end_index] = g_rs
 
         return ls, rs
-
-
-# f(x) = I(x <= 0)
-def g_is_neg(v, args):
-    return np.where(v <= 0, 0, np.inf)
-
-
-def prox_is_neg(rho, v, args):
-    return np.where(v > 0, 0, v)
-
-
-def subdiff_is_neg(v, args):
-    ls = np.zeros(len(v))
-    rs = np.zeros(len(v))
-
-    ls[v > 0] = np.nan
-    rs[v > 0] = np.nan
-
-    ls[v == 0] = 0
-    rs[v == 0] = np.inf
-
-    return ls, rs
-
-
-# f(x) = I(0 <= x <= 1)
-def g_is_bound(v, args):
-    # TODO: make sure lb < ub
-    if "lb" in args:
-        lb = args["lb"]
-    else:
-        lb = 0
-    if "ub" in args:
-        ub = args["ub"]
-    else:
-        ub = 1
-    return np.where((v >= lb) & (v <= ub), 0, np.inf)
-
-
-def prox_is_bound(rho, v, args):
-    # TODO: make sure lb < ub
-    if "lb" in args:
-        lb = args["lb"]
-    else:
-        lb = 0
-    if "ub" in args:
-        ub = args["ub"]
-    else:
-        ub = 1
-    output = np.where(v >= ub, ub, v)
-    output = np.where(output <= lb, lb, output)
-    return output
-
-
-def subdiff_is_bound(v, args):
-    # TODO: make sure lb < ub
-    if "lb" in args:
-        lb = args["lb"]
-    else:
-        lb = 0
-    if "ub" in args:
-        ub = args["ub"]
-    else:
-        ub = 1
-
-    ls = np.zeros(len(v))
-    rs = np.zeros(len(v))
-
-    ls[v > ub] = np.nan
-    rs[v > ub] = np.nan
-
-    ls[v == ub] = 0
-    rs[v == ub] = np.inf
-
-    ls[v < lb] = np.nan
-    rs[v < lb] = np.nan
-
-    ls[v == lb] = -np.inf
-    rs[v == lb] = 0
-
-    return ls, rs
-
-
-# f(x) = I(x == 0)
-def g_is_zero(v, args):
-    return np.where(v == 0, 0, np.inf)
-
-
-def prox_is_zero(rho, v, args):
-    return np.zeros(len(v))
-
-
-def subdiff_is_zero(v, args):
-    ls = np.nan * np.ones(len(v))
-    rs = np.nan * np.ones(len(v))
-
-    ls[v == 0] = -np.inf
-    rs[v == 0] = np.inf
-
-    return ls, rs
-
-
-# f(x) = max{x, 0}
-def g_pos(v, args):
-    return np.maximum(v, 0)
-
-
-def prox_pos(rho, v, args):
-    output = np.where(v <= 0, v, 0)
-    output = np.where(v > 1 / rho, v - 1 / rho, output)
-    return output
-
-
-def subdiff_pos(v, args):
-    ls = np.zeros(len(v))
-    rs = np.zeros(len(v))
-
-    ls[v > 0] = 1
-    rs[v > 0] = 1
-
-    # TODO: change this to is_close?
-    ls[v == 0] = 0
-    rs[v == 0] = 1
-
-    return ls, rs
-
-
-# f(x) = max{-x, 0}
-def g_neg(v, args):
-    return np.maximum(-v, 0)
-
-
-def prox_neg(rho, v, args):
-    return np.where(v < -1 / rho, v + 1 / rho, v)
-
-
-def subdiff_neg(v, args):
-    ls = np.zeros(len(v))
-    rs = np.zeros(len(v))
-
-    ls[v < 0] = -1
-    rs[v < 0] = -1
-
-    # TODO: change this to is_close?
-    ls[v == 0] = -1
-    rs[v == 0] = 0
-
-    return ls, rs
-
-
-g_funcs = {
-    "is_neg": g_is_neg,
-    "is_bound": g_is_bound,
-    "is_zero": g_is_zero,
-    "pos": g_pos,
-    "neg": g_neg,
-}
-
-prox_ops = {
-    "is_neg": prox_is_neg,
-    "is_bound": prox_is_bound,
-    "is_zero": prox_is_zero,
-    "pos": prox_pos,
-    "neg": prox_neg,
-}
-
-subdiffs = {
-    "is_neg": subdiff_is_neg,
-    "is_bound": subdiff_is_bound,
-    "is_zero": subdiff_is_zero,
-    "pos": subdiff_pos,
-    "neg": subdiff_neg,
-}
