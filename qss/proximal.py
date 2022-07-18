@@ -379,7 +379,7 @@ class GCollection:
         return np.sum(output)
 
     def prox(self, rho, equil_scaling, v):
-        output = np.zeros_like(v)
+        output = np.copy(v)
 
         for item in self._g_list:
             start_index, end_index = item["range"]
