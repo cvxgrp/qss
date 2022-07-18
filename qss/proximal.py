@@ -7,9 +7,9 @@ G_FUNC_NAMES = {
     "is_pos",
     "is_neg",
     "is_bound",
-    # "is_zero",
-    # "pos",
-    # "neg",
+    "is_zero",
+    "pos",
+    "neg",
     "card",
     "quantile",
     "huber",
@@ -49,7 +49,7 @@ class G(ABC):
             self.prox_raw(new_rho, new_scale * v - self._shift) + self._shift
         ) / new_scale
 
-    def subiff(self, equil_scaling, obj_scale, v):
+    def subdiff(self, equil_scaling, obj_scale, v):
         g_ls, g_rs = self.subdiff_raw(self._scale * equil_scaling * v - self._shift)
         g_ls *= obj_scale * equil_scaling * self._weight * self._scale
         g_rs *= obj_scale * equil_scaling * self._weight * self._scale
@@ -62,13 +62,13 @@ class Zero(G):
         super().__init__(weight, scale, shift)
         self._is_convex = True
 
-    def evaluate(self, v):
+    def evaluate_raw(self, v):
         return np.zeros(np.asarray(v).shape)
 
-    def prox(self, rho, v):
+    def prox_raw(self, rho, v):
         return np.asarray(v)
 
-    def subdiff(self, v):
+    def subdiff_raw(self, v):
         v = np.asarray(v)
         return np.zeros(v.shape), np.zeros(v.shape)
 
@@ -115,8 +115,9 @@ class IsPos(G):
         return np.where(v < 0, 0, v)
 
     def subdiff_raw(self, v):
-        ls = np.zeros_like(v)
-        rs = np.zeros_like(v)
+        v = np.asarray(v)
+        ls = np.zeros(v.shape)
+        rs = np.zeros(v.shape)
 
         ls[v < 0] = np.nan
         rs[v < 0] = np.nan
@@ -134,15 +135,16 @@ class IsNeg(G):
 
     def evaluate_raw(self, v):
         v = np.asarray(v)
-        return np.where(v <= 0, 0, v)
+        return np.where(v <= 0, 0, np.inf)
 
     def prox_raw(self, rho, v):
         v = np.asarray(v)
         return np.where(v > 0, 0, v)
 
     def subdiff_raw(self, v):
-        ls = np.zeros_like(v)
-        rs = np.zeros_like(v)
+        v = np.asarray(v)
+        ls = np.zeros(v.shape)
+        rs = np.zeros(v.shape)
 
         ls[v > 0] = np.nan
         rs[v > 0] = np.nan
@@ -169,8 +171,9 @@ class IsBound(G):
         return output
 
     def subdiff_raw(self, v):
-        ls = np.zeros_like(v)
-        rs = np.zeros_like(v)
+        v = np.asarray(v)
+        ls = np.zeros(v.shape)
+        rs = np.zeros(v.shape)
 
         ls[v > self._ub] = np.nan
         rs[v > self._ub] = np.nan
@@ -196,11 +199,12 @@ class IsZero(G):
         return np.where(v == 0, 0, np.inf)
 
     def prox_raw(self, rho, v):
-        return np.zeros_like(v)
+        return np.zeros(np.asarray(v).shape)
 
     def subdiff_raw(self, v):
-        ls = np.nan * np.ones_like(v)
-        rs = np.nan * np.ones_like(v)
+        v = np.asarray(v)
+        ls = np.nan * np.ones(v.shape)
+        rs = np.nan * np.ones(v.shape)
 
         ls[v == 0] = -np.inf
         rs[v == 0] = np.inf
@@ -222,8 +226,9 @@ class Pos(G):
         return output
 
     def subdiff_raw(self, v):
-        ls = np.zeros_like(v)
-        rs = np.zeros_like(v)
+        v = np.asarray(v)
+        ls = np.zeros(v.shape)
+        rs = np.zeros(v.shape)
 
         ls[v > 0] = 1
         rs[v > 0] = 1
@@ -247,8 +252,9 @@ class Neg(G):
         return np.where(v < -1 / rho, v + 1 / rho, v)
 
     def subdiff_raw(self, v):
-        ls = np.zeros_like(v)
-        rs = np.zeros_like(v)
+        v = np.asarray(v)
+        ls = np.zeros(v.shape)
+        rs = np.zeros(v.shape)
 
         ls[v < 0] = -1
         rs[v < 0] = -1
@@ -273,8 +279,9 @@ class Card(G):
         return np.where(np.abs(v) < np.sqrt(2 / rho), 0, v)
 
     def subdiff_raw(self, v):
-        ls = np.nan * np.ones_like(v)
-        rs = np.nan * np.ones_like(v)
+        v = np.asarray(v)
+        ls = np.nan * np.ones(v.shape)
+        rs = np.nan * np.ones(v.shape)
 
         ls[v == 0] = 0
         rs[v == 0] = 0
@@ -298,8 +305,9 @@ class Quantile(G):
         )
 
     def subdiff_raw(self, v):
-        ls = np.zeros_like(v)
-        rs = np.zeros_like(v)
+        v = np.asarray(v)
+        ls = np.zeros(v.shape)
+        rs = np.zeros(v.shape)
 
         ls[v > 0] = self._tau
         rs[v > 0] = self._tau
@@ -334,8 +342,9 @@ class Huber(G):
         )
 
     def subdiff_raw(self, v):
-        ls = np.zeros_like(v)
-        rs = np.zeros_like(v)
+        v = np.asarray(v)
+        ls = np.zeros(v.shape)
+        rs = np.zeros(v.shape)
 
         abs_v = np.abs(v)
 
@@ -366,8 +375,9 @@ class IsInt(G):
         return np.rint(v)
 
     def subdiff_raw(self, v):
-        ls = np.nan * np.ones_like(v)
-        rs = np.nan * np.ones_like(v)
+        v = np.asarray(v)
+        ls = np.nan * np.ones(v.shape)
+        rs = np.nan * np.ones(v.shape)
 
         int_indices = self.evaluate_raw(v)
 
@@ -397,8 +407,9 @@ class IsFiniteSet(G):
         return self._S[idx]
 
     def subdiff_raw(self, v):
-        ls = np.nan * np.ones_like(v)
-        rs = np.nan * np.ones_like(v)
+        v = np.asarray(v)
+        ls = np.nan * np.ones(v.shape)
+        rs = np.nan * np.ones(v.shape)
 
         in_set_indices = self.evaluate_raw(v)
 
@@ -428,8 +439,9 @@ class IsBool(G):
         return self._S[idx]
 
     def subdiff_raw(self, v):
-        ls = np.nan * np.ones_like(v)
-        rs = np.nan * np.ones_like(v)
+        v = np.asarray(v)
+        ls = np.nan * np.ones(v.shape)
+        rs = np.nan * np.ones(v.shape)
 
         is_bool_indices = self.evaluate_raw(v)
 
@@ -519,7 +531,7 @@ class GCollection:
             self._g_list.append({"range": range, "func": func})
 
     def evaluate(self, v):
-        output = np.zeros_like(v)
+        output = np.zeros(np.asarray(v).shape)
 
         for item in self._g_list:
             start_index, end_index = item["range"]
@@ -541,8 +553,9 @@ class GCollection:
         return output
 
     def subdiff(self, equil_scaling, obj_scale, v):
-        ls = np.zeros_like(v)
-        rs = np.zeros_like(v)
+        v = np.asarray(v)
+        ls = np.zeros(v.shape)
+        rs = np.zeros(v.shape)
 
         for item in self._g_list:
             start_index, end_index = item["range"]
