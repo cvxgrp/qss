@@ -218,8 +218,10 @@ class QSS:
 
         if self._options["verbose"]:
             print(
-                "### Factorization finished in {} seconds. ###".format(
-                    time.time() - factorization_start_time
+                "{} {}{}".format(
+                    "initial factorization time:".ljust(util.BULLET_WIDTH),
+                    format(time.time() - factorization_start_time, ".2e"),
+                    "",
                 )
             )
 
@@ -269,7 +271,7 @@ class QSS:
         self._reset_kkt_info()
 
         if self._options["verbose"]:
-            print("Total solve time {} seconds.".format(time.time() - start_time))
+            util.print_summary(self._iterates["obj_val"], time.time() - start_time)
 
         return (
             self._iterates["obj_val"],

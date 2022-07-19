@@ -3,6 +3,9 @@ import scipy as sp
 import time
 from qss import proximal
 
+PRINT_WIDTH = 63
+BULLET_WIDTH = 32
+
 
 def evaluate_stop_crit(xk1, zk, zk1, uk1, dim, rho, eps_abs, eps_rel, P, q, ord=2):
     if ord == 2:
@@ -39,7 +42,6 @@ def print_info():
     print("              QSS: the Quadratic-Separable Solver              ")
     print("                     author: Luke Volpatti                     ")
     print("---------------------------------------------------------------")
-    print()
 
 
 def print_header():
@@ -69,3 +71,9 @@ def evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling):
     return (0.5 * zk1 @ P @ zk1 + q @ zk1 + r) / obj_scale + g.evaluate(
         equil_scaling * zk1
     )
+
+
+def print_summary(obj_val, total_solve_time):
+    print()
+    print("{} {}".format("objective value:".ljust(32), obj_val))
+    print("{} {:.4}s".format("total solve time:".ljust(32), total_solve_time, ".2e"))

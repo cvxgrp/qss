@@ -82,7 +82,8 @@ def update_rho(
 
 def admm(data, kkt_info, options, x, y, equil_scaling, obj_scale, **kwargs):
     if options["verbose"]:
-        print(" #####     Beginning ADMM solve     #####")
+        print("")
+        print("ADMM solve".center(util.PRINT_WIDTH))
         util.print_header()
         admm_start_time = time.time()
 
@@ -219,14 +220,27 @@ def admm(data, kkt_info, options, x, y, equil_scaling, obj_scale, **kwargs):
     if verbose:
         util.print_footer()
         print(
-            "Average",
-            (time.time() - admm_start_time - total_refactorization_time) / iter_num,
-            "seconds per iteration",
+            "{} {}{}".format(
+                "avg time per iter:".ljust(util.BULLET_WIDTH),
+                format(
+                    (time.time() - admm_start_time - total_refactorization_time)
+                    / iter_num,
+                    ".2e",
+                ).ljust(5),
+                "s",
+            )
         )
-        print("Refactored {} times.".format(refactorization_count))
         print(
-            "Spent total {} seconds refactorizing.".format(total_refactorization_time)
+            "{} {}".format(
+                "refactorizations:".ljust(util.BULLET_WIDTH), str(refactorization_count)
+            )
         )
-        print("Objective value: {}".format(iterates["obj_val"]))
+        print(
+            "{} {}{}".format(
+                "total time spent refactorizing:".ljust(util.BULLET_WIDTH),
+                format(total_refactorization_time, ".2e").ljust(5),
+                "s",
+            )
+        )
 
     return iterates
