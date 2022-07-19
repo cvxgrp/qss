@@ -66,6 +66,6 @@ def print_status(iter_num, obj_val, r_prim, r_dual, rho, solve_start_time):
 
 
 def evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling):
-    return (0.5 * zk1 @ P @ zk1 + q @ zk1 + r) / obj_scale + proximal.apply_g_funcs(
-        g, equil_scaling * zk1
+    return (0.5 * zk1 @ P @ zk1 + q @ zk1 + r) / obj_scale + g.evaluate(
+        equil_scaling * zk1
     )
