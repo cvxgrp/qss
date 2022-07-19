@@ -221,7 +221,7 @@ class QSS:
                 "{} {}{}".format(
                     "initial factorization time:".ljust(util.BULLET_WIDTH),
                     format(time.time() - factorization_start_time, ".2e"),
-                    "",
+                    "s",
                 )
             )
 
