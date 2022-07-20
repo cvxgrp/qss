@@ -194,8 +194,10 @@ class QSS:
             self._iterates["y"] *= self._scaling["obj_scale"]
             if self._options["verbose"]:
                 print(
-                    "### Preconditioning finished in {} seconds. ###".format(
-                        time.time() - precond_start_time
+                    "{} {}{}".format(
+                        "preconditioning time:".ljust(util.BULLET_WIDTH),
+                        format(time.time() - precond_start_time, ".2e"),
+                        "s",
                     )
                 )
 
