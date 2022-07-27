@@ -87,6 +87,10 @@ def admm(data, kkt_info, options, x, y, equil_scaling, obj_scale, **kwargs):
         util.print_header()
         admm_start_time = time.time()
 
+    if options["warm_start"] == False and options["random_init"] == True:
+        x = np.random.randn(data["dim"])  # / 1e4
+        y = np.random.randn(data["dim"])  # / 1e4
+
     # Unpacking data
     P = data["P"]
     q = data["q"]
@@ -143,13 +147,29 @@ def admm(data, kkt_info, options, x, y, equil_scaling, obj_scale, **kwargs):
         else:
             xk1 = kkt_info["F"].solve(-q + rho * (zk - uk))
 
-        # Update z
-        zk1 = g.prox(
-            rho / obj_scale, equil_scaling, alpha * xk1 + (1 - alpha) * zk + uk
-        )
+        alphas = [0.01, 0.1, 1, 1.8]
+        if options["search_alpha"] and iter_num % 20 == 0:
+            best_obj = np.inf
+            for alpha in alphas:
+                zk1_alpha = g.prox(
+                    rho / obj_scale, equil_scaling, alpha * xk1 + (1 - alpha) * zk + uk
+                )
+                uk1_alpha = uk + alpha * xk1 + (1 - alpha) * zk - zk1_alpha
+                alpha_obj = util.evaluate_objective(
+                    P, q, r, g, zk1_alpha, obj_scale, equil_scaling
+                )
+                if alpha_obj < best_obj:
+                    best_obj = alpha_obj
+                    zk1 = zk1_alpha
+                    uk1 = uk1_alpha
+        else:
+            # Update z
+            zk1 = g.prox(
+                rho / obj_scale, equil_scaling, alpha * xk1 + (1 - alpha) * zk + uk
+            )
 
-        # Update u
-        uk1 = uk + alpha * xk1 + (1 - alpha) * zk - zk1
+            # Update u
+            uk1 = uk + alpha * xk1 + (1 - alpha) * zk - zk1
 
         # Calculate residuals and objective
         r_prim = np.linalg.norm(xk1 - zk1, ord=np.inf)

@@ -122,6 +122,8 @@ class QSS:
         self._options["descent_method"] = None
         self._options["line_search"] = None
         self._options["algorithms"] = None
+        self._options["random_init"] = None
+        self._options["search_alpha"] = None
         self._options["verbose"] = None
         return
 
@@ -156,6 +158,8 @@ class QSS:
         descent_method="momentum",
         line_search=True,
         algorithms=["admm"],
+        random_init=False,
+        search_alpha=False,
         verbose=False,
     ):
 
@@ -172,6 +176,8 @@ class QSS:
         self._options["descent_method"] = descent_method
         self._options["line_search"] = line_search
         self._options["algorithms"] = algorithms
+        self._options["random_init"] = random_init
+        self._options["search_alpha"] = search_alpha
         self._options["verbose"] = verbose
 
         if self._options["verbose"]:

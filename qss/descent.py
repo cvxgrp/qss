@@ -29,7 +29,7 @@ def polish(g, zk1, P, q, r, A, b, equil_scaling, obj_scale, dim):
 
 def l1_descent_dir(g, x, P, q, r, equil_scaling, obj_scale):
     f_subdiff = P @ x + q
-    ls, rs = proximal.get_subdiff(g, x, equil_scaling, obj_scale)
+    ls, rs = g.subdiff(equil_scaling, obj_scale, x)
 
     ai = f_subdiff + ls
     bi = f_subdiff + rs
@@ -46,7 +46,7 @@ def l1_descent_dir(g, x, P, q, r, equil_scaling, obj_scale):
 
 def l2_descent_dir(g, x, P, q, r, equil_scaling, obj_scale):
     f_subdiff = P @ x + q
-    ls, rs = proximal.get_subdiff(g, x, equil_scaling, obj_scale)
+    ls, rs = g.subdiff(equil_scaling, obj_scale, x)
 
     ai = f_subdiff + ls
     bi = f_subdiff + rs
@@ -62,8 +62,8 @@ def l2_descent_dir(g, x, P, q, r, equil_scaling, obj_scale):
 
 
 def sd_eval_obj(x, v_st, a, b, c, t, g, equil_scaling, obj_scale):
-    return (a + b * t + c * t**2) / obj_scale + proximal.apply_g_funcs(
-        g, equil_scaling * (x + t * v_st)
+    return (a + b * t + c * t**2) / obj_scale + g.evaluate(
+        equil_scaling * (x + t * v_st)
     )
 
 
