@@ -38,6 +38,7 @@ class LinearOperator:
                         raise ValueError("Dimension mismatch in A.")
 
         self._A = A
+        self.shape = (self._nrows, self._ncols)
 
     def matvec(self, v):
         if v.shape[0] != self._ncols:

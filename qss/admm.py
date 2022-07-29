@@ -16,7 +16,7 @@ def update_rho(
     constr_dim,
     refactorization_count,
     total_refactorization_time,
-    kkt_info,
+    kkt_system,
     rho,
     r_prim,
     r_dual,
@@ -50,23 +50,7 @@ def update_rho(
         uk1 /= new_rho_candidate
 
         # Update KKT matrix
-        if has_constr:
-            I0_matrix = sp.sparse.block_diag(
-                [
-                    sp.sparse.identity(dim, format="csc"),
-                    sp.sparse.csc_matrix((constr_dim, constr_dim)),
-                ]
-            )
-        else:
-            I0_matrix = sp.sparse.identity(dim, format="csc")
-
-        if has_constr:
-            kkt_info["quad_kkt_unreg"] += (new_rho_candidate - rho) * I0_matrix
-
-        kkt_info["quad_kkt"] += (new_rho_candidate - rho) * I0_matrix
-        kkt_info["F"].update(kkt_info["quad_kkt"])
-
-        rho = new_rho_candidate
+        kkt_system.update_rho(new_rho_candidate)
 
         return (
             rho,
@@ -80,7 +64,7 @@ def update_rho(
     )
 
 
-def admm(data, kkt_info, options, x, y, equil_scaling, obj_scale, **kwargs):
+def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
     if options["verbose"]:
         print("")
         print("ADMM solve".center(util.PRINT_WIDTH))
@@ -126,22 +110,11 @@ def admm(data, kkt_info, options, x, y, equil_scaling, obj_scale, **kwargs):
 
         # Update x
         if has_constr:
-            if use_iter_refinement:
-                kkt_solve = matrix.ir_solve(
-                    kkt_info["quad_kkt_unreg"],
-                    kkt_info["F"],
-                    np.concatenate([-q + rho * (zk - uk), b]),
-                )
-                xk1 = kkt_solve[:dim]
-                nuk1 = kkt_solve[dim:]
-            else:
-                kkt_solve = kkt_info["F"].solve(
-                    np.concatenate([-q + rho * (zk - uk), b])
-                )
-                xk1 = kkt_solve[:dim]
-                nuk1 = kkt_solve[dim:]
+            kkt_solve = kkt_system.solve(np.concatenate([-q + rho * (zk - uk), b]))
+            xk1 = kkt_solve[:dim]
+            nuk1 = kkt_solve[dim:]
         else:
-            xk1 = kkt_info["F"].solve(-q + rho * (zk - uk))
+            xk1 = kkt_system.solve(-q + rho * (zk - uk))
 
         # Update z
         zk1 = g.prox(
@@ -196,7 +169,7 @@ def admm(data, kkt_info, options, x, y, equil_scaling, obj_scale, **kwargs):
                 constr_dim,
                 refactorization_count,
                 total_refactorization_time,
-                kkt_info,
+                kkt_system,
                 rho,
                 r_prim,
                 r_dual,
