@@ -52,6 +52,7 @@ class AbstractKKT:
     def __init__(self, P, A, rho):
         self._dim = A.shape[1]
         self._constr_dim = A.shape[0]
+        self.shape = (self._dim, self._constr_dim)
 
         self._P = P
         self._A = A
@@ -64,7 +65,7 @@ class AbstractKKT:
         )
 
     def matvec(self, v):
-        res = np.zeros(self._dim + self._constr_dim)
+        res = np.zeros(self._dim + self._constr_dim, dtype=np.cfloat)
         res[: self._dim] += self._P @ v[: self._dim]
         res[: self._dim] += self._A.rmatvec(v[self._dim :])
         res[self._dim :] += self._A.matvec(v[: self._dim])
@@ -72,7 +73,9 @@ class AbstractKKT:
         return res
 
     def solve(self, rhs):
-        return sp.sparse.linalg.minres(self._splinop, rhs)[0]
+        # TODO: fix this so that it uses minres but doesn't give not symmetric
+        # error.
+        return sp.sparse.linalg.gmres(self._splinop, rhs)[0]
 
     def update_rho(self, new_rho):
         self._rho = new_rho

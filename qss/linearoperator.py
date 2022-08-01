@@ -44,7 +44,7 @@ class LinearOperator:
         if v.shape[0] != self._ncols:
             raise ValueError("Dimension mismatch.")
 
-        res = np.zeros(self._nrows)
+        res = np.zeros(self._nrows, dtype=np.cfloat)
         row_index = 0
         for i, row_block in enumerate(self._A):
             col_index = 0
@@ -67,7 +67,7 @@ class LinearOperator:
         if v.shape[0] != self._nrows:
             raise ValueError("Dimension mismatch.")
 
-        res = np.zeros(self._ncols)
+        res = np.zeros(self._ncols, dtype=np.cfloat)
         col_index = 0
         for i, row_block in enumerate(self._A):
             row_index = 0
