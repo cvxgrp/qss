@@ -65,7 +65,7 @@ class AbstractKKT:
         )
 
     def matvec(self, v):
-        res = np.zeros(self._dim + self._constr_dim, dtype=np.cfloat)
+        res = np.zeros(self._dim + self._constr_dim)
         res[: self._dim] += self._P @ v[: self._dim]
         res[: self._dim] += self._A.rmatvec(v[self._dim :])
         res[self._dim :] += self._A.matvec(v[: self._dim])
