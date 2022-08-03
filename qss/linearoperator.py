@@ -66,7 +66,10 @@ class LinearOperator:
             col_index = 0
             for j, block in enumerate(row_block):
                 if block is not None:
-                    if type(block) is sp.sparse.linalg._interface._CustomLinearOperator:
+                    if (
+                        type(block) is sp.sparse.linalg._interface._CustomLinearOperator
+                        or type(block) is LinearOperator
+                    ):
                         res[row_index : row_index + self._rowdims[i]] += block.matvec(
                             v[col_index : col_index + self._coldims[j]]
                         )
@@ -90,7 +93,10 @@ class LinearOperator:
             row_index = 0
             for j, block in enumerate(row_block):
                 if block is not None:
-                    if type(block) is sp.sparse.linalg._interface._CustomLinearOperator:
+                    if (
+                        type(block) is sp.sparse.linalg._interface._CustomLinearOperator
+                        or type(block) is LinearOperator
+                    ):
                         res[row_index : row_index + self._coldims[j]] += block.rmatvec(
                             v[col_index : col_index + self._rowdims[i]]
                         )
@@ -103,3 +109,26 @@ class LinearOperator:
             col_index += self._rowdims[i]
 
         return res
+
+
+def block_diag(linop_list):
+    A = []
+    num_blocks = len(linop_list)
+
+    for i, block in enumerate(linop_list):
+        inner_list = [None] * i
+        inner_list.append(block)
+        inner_list.extend([None] * (num_blocks - i - 1))
+        A.append(inner_list)
+
+    return LinearOperator(A)
+
+
+def hstack(linop_list):
+    A = [linop_list]
+    return LinearOperator(A)
+
+
+def vstack(linop_list):
+    A = [[block] for block in linop_list]
+    return LinearOperator(A)
