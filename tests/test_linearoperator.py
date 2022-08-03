@@ -152,3 +152,88 @@ class TestRMatvec:
         linop.rmatvec(x),
         x @ sp.sparse.bmat([[P, A.T], [A, 0.1 * sp.sparse.eye(A.shape[0])]]),
     )
+
+
+class TestBlockDiag:
+    I = sp.sparse.eye(10)
+    A = sp.sparse.rand(5, 10)
+    P = sp.sparse.rand(10, 10)
+    P = P.T @ P
+
+    def mv(v):
+        return 0.1 * v
+
+    def rmv(v):
+        return 0.1 * v
+
+    F = sp.sparse.linalg.LinearOperator(
+        (A.shape[0], A.shape[0]), matvec=mv, rmatvec=rmv
+    )
+
+    linop = qss.linearoperator.block_diag([I, I, I])
+    x = np.random.randn(linop.shape[1])
+    assert np.allclose(linop.matvec(x), x)
+
+    linop = qss.linearoperator.block_diag([F, F, 0.1 * I])
+    x = np.random.randn(linop.shape[1])
+    assert np.allclose(linop.matvec(x), mv(x))
+
+
+class TestHstack:
+    I = sp.sparse.eye(10)
+    A = sp.sparse.rand(5, 10)
+    P = sp.sparse.rand(10, 10)
+    P = P.T @ P
+
+    def mv(v):
+        return 0.1 * v
+
+    def rmv(v):
+        return 0.1 * v
+
+    F = sp.sparse.linalg.LinearOperator(
+        (A.shape[0], A.shape[0]), matvec=mv, rmatvec=rmv
+    )
+
+    linop1 = qss.linearoperator.hstack([F, F])
+    x = np.random.randn(linop1.shape[1])
+    assert np.allclose(
+        linop1.matvec(x), F.matvec(x[: F.shape[0]]) + F.matvec(x[F.shape[0] :])
+    )
+
+    linop2 = qss.linearoperator.hstack([linop1, A])
+    x = np.random.randn(linop2.shape[1])
+    assert np.allclose(
+        linop2.matvec(x), linop1.matvec(x[: linop1.shape[1]]) + A @ x[linop1.shape[1] :]
+    )
+
+
+class TestVstack:
+    I = sp.sparse.eye(10)
+    A = sp.sparse.rand(5, 10)
+    P = sp.sparse.rand(10, 10)
+    P = P.T @ P
+
+    def mv(v):
+        return 0.1 * v
+
+    def rmv(v):
+        return 0.1 * v
+
+    F = sp.sparse.linalg.LinearOperator(
+        (A.shape[0], A.shape[0]), matvec=mv, rmatvec=rmv
+    )
+
+    linop1 = qss.linearoperator.vstack([F, F])
+    x = np.random.randn(linop1.shape[1])
+    assert np.allclose(
+        linop1.matvec(x),
+        np.concatenate([F.matvec(x), F.matvec(x)]),
+    )
+
+    linop2 = qss.linearoperator.vstack([linop1, A.T])
+    x = np.random.randn(linop2.shape[1])
+    assert np.allclose(
+        linop2.matvec(x),
+        np.concatenate([linop1.matvec(x), A.T @ x]),
+    )
