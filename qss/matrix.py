@@ -9,6 +9,7 @@ class KKT:
         self._dim = A.shape[1]
         self._constr_dim = A.shape[0]
         self._has_constr = A.nnz != 0
+        self._rho = rho
 
         reg = -1e-7
         # TODO: check if has constraints

@@ -53,7 +53,7 @@ def update_rho(
         kkt_system.update_rho(new_rho_candidate)
 
         return (
-            rho,
+            new_rho_candidate,
             refactorization_count + 1,
             total_refactorization_time + time.time() - refactorization_start_time,
         )
