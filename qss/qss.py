@@ -5,6 +5,7 @@ import time
 import copy
 from qss import precondition
 from qss import matrix
+from qss import linearoperator
 from qss import proximal
 from qss import admm
 from qss import descent
@@ -77,7 +78,14 @@ class QSS:
         self._data["r"] = data["r"]
         self._data["g"] = proximal.GCollection(data["g"])
 
-        if ("A" not in data) or (data["A"] is None) or (data["A"].nnz == 0):
+        self._data["abstract_constr"] = False
+        if ("A" in data) and (type(data["A"]) is linearoperator.LinearOperator):
+            self._data["A"] = data["A"]  # TODO: in future, copy w/ linop .copy()
+            self._data["b"] = np.copy(data["b"])
+            self._data["abstract_constr"] = True
+            self._data["has_constr"] = True
+            self._data["constr_dim"] = data["A"].shape[0]
+        elif ("A" not in data) or (data["A"] is None) or (data["A"].nnz == 0):
             # TODO: get rid of this placeholder when QSS is more object-oriented, i.e.,
             # when all problem data is passed around together.
             # I'm using the placeholder for now to avoid littering precondition.py with
@@ -104,8 +112,7 @@ class QSS:
         self._reset_iterates()
 
         # KKT system information
-        self._kkt_info = {}
-        self._reset_kkt_info()
+        self._kkt_system = None
 
         # User-specified options
         self._options = {}
@@ -134,12 +141,11 @@ class QSS:
         self._iterates["y"] = np.zeros(self._data["dim"])
         self._iterates["obj_val"] = None
 
-    def _reset_kkt_info(self):
+    def _reset_kkt_system(self):
         # TODO: should we be checking to see if these keys exist and if so
         # calling `del` on them?
-        self._kkt_info["quad_kkt"] = None
-        self._kkt_info["quad_kkt_unreg"] = None
-        self._kkt_info["F"] = None
+        self._kkt_system.reset()
+        self._kkt_system = None
 
     def solve(
         self,
@@ -183,7 +189,7 @@ class QSS:
             self._reset_iterates()
 
         # Preconditioning
-        if self._options["precond"]:
+        if self._options["precond"] and not self._data["abstract_constr"]:
             if self._options["verbose"]:
                 precond_start_time = time.time()
             self._unscaled_data = copy.deepcopy(self._data)
@@ -204,20 +210,14 @@ class QSS:
         # Constructing KKT matrix
         if self._options["verbose"]:
             factorization_start_time = time.time()
-        if self._data["has_constr"]:
-            self._kkt_info["quad_kkt_unreg"] = matrix.build_kkt(
-                0, self._options["rho"], **self._data
-            )
-            self._kkt_info["quad_kkt"] = matrix.build_kkt(
-                -1e-7, self._options["rho"], **self._data
+        if self._data["abstract_constr"]:
+            self._kkt_system = matrix.AbstractKKT(
+                self._data["P"], self._data["A"], self._options["rho"]
             )
         else:
-            self._kkt_info["quad_kkt"] = self._data["P"] + self._options[
-                "rho"
-            ] * sp.sparse.identity(self._data["dim"])
-
-        self._kkt_info["F"] = qdldl.Solver(self._kkt_info["quad_kkt"])
-
+            self._kkt_system = matrix.KKT(
+                self._data["P"], self._data["A"], self._options["rho"]
+            )
         if self._options["verbose"]:
             print(
                 "{} {}{}".format(
@@ -243,7 +243,7 @@ class QSS:
             if algorithm == "proj_sd":
                 self._iterates = descent.proj_sd(
                     self._data,
-                    self._kkt_info,
+                    self._kkt_system,
                     **self._iterates,
                     **self._scaling,
                     **self._options,
@@ -251,7 +251,7 @@ class QSS:
             elif algorithm == "admm":
                 self._iterates = admm.admm(
                     self._data,
-                    self._kkt_info,
+                    self._kkt_system,
                     self._options,
                     **self._iterates,
                     **self._scaling,
@@ -262,7 +262,7 @@ class QSS:
         self._options["max_iter"] = max_iter_list
 
         # Clean up preconditioning
-        if self._options["precond"]:
+        if self._options["precond"] and not self._data["abstract_constr"]:
             self._iterates["x"] *= self._scaling["equil_scaling"]
             self._iterates["y"] /= self._scaling["obj_scale"]
             # TODO: should we del self._data first?
@@ -270,7 +270,7 @@ class QSS:
             self._reset_scaling()
 
         # Clean up
-        self._reset_kkt_info()
+        self._reset_kkt_system()
 
         if self._options["verbose"]:
             util.print_summary(self._iterates["obj_val"], time.time() - start_time)

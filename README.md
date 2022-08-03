@@ -42,7 +42,7 @@ results = solver.solve(eps_abs=1e-4,
 
 ### Parameters
 - `data`: dictionary with the following keys:
-    - `'P'`, `'q'`, `'r'`, `'A'`, `'b'` specify the quadratic part of the objective and the linear constraint as in the problem formulation above. `'P'` and `'A'` should be `scipy.sparse` CSC matrices, `'q'` and `'b'` should be `numpy` arrays,  and `'r'` should be a scalar. `'A'` and `'b'` can be excluded from `data` or set to `None` if the linear equality constraints are not needed. 
+    - `'P'`, `'q'`, `'r'`, `'A'`, `'b'` specify the quadratic part of the objective and the linear constraint as in the problem formulation above. `'P'` and `'A'` should be `scipy.sparse` CSC matrices or QSS `LinearOperator`s (see below), `'q'` and `'b'` should be `numpy` arrays,  and `'r'` should be a scalar. `'A'` and `'b'` can be excluded from `data` or set to `None` if the linear equality constraints are not needed. 
     - `'g'` is a list of separable function definitions. Each separable function is declared as a dictionary with the following keys:
         - `'g'`: string that corresponds to a valid separable function name (see below for a list of supported functions).
         - `'args'`: `'weight'` (default 1), `'scale'` (default 1), `'shift'` (default 0) allow the `'g'` function to be applied in a weighted manner to a shifted and scaled input. Some functions take additional arguments, see below. 
@@ -87,9 +87,38 @@ The following separable functions are supported:
 - `"is_int"`: $g(x) = I(x \text{ is an integer})$
 - `"is_finite_set"`: $g(x; S) = I(x \in S)$
     - `S` is a Python set of scalars.
-- `"is_bool"`: $g(x) = I(x \in \\{0,1\\})$
+- `"is_bool"`: $g(x) = I(x \in \{0,1\})$
 
 The `t` (weight), `a` (scale), `b` (shift) parameters are used to shift and scale the above as follows: `t * g(ax - b)`.
+
+
+### Abstract linear operators
+QSS comes with built-in support for abstract linear operators via the `qss.linearoperator.LinearOperator` class (hereafter referred to simply as `LinearOperator`).
+
+The easiest way to build a `LinearOperator` is via its constructor. The argument to the constructor should be a list of lists representing a block matrix, in which each block is one of the following:
+- SciPy sparse matrix or
+- [`scipy.sparse.linalg.LinearOperator`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.LinearOperator.html) or
+- `qss.linearoperator.LinearOperator` or
+- `None`.
+
+As an example, a constraint matrix `A` could be built as follows:
+```python
+from qss.linearoperator import LinearOperator
+
+A = LinearOperator([
+    [None, F, -I],
+    [I, I, None]
+])
+```
+Where `F` is a `scipy.sparse.linalg.LinearOperator` that implements the Fourier transform and `I` is a SciPy sparse identity matrix. 
+
+There are several helper functions available to facilitate the creation of `LinearOperator`s, all accessible through `qss.linearoperator`: 
+- `block_diag(D)`: Returns a block diagonal `LinearOperator` from `D`, a list of linear operators (Scipy sparse matrix, `scipy.sparse.linalg.LinearOperator`, or `qss.linearoperator.LinearOperator`).
+- `hstack(D)`: Horizontally concatenates list of linear operators `D` into a single `LinearOperator`.
+- `vstack(D)`: Vertically concatenates a list of linear operators `D` into a single `LinearOperator`. 
+
+Note that solve times may be slower when `LinearOperator`s are involved. If either `P` or `A` is a `LinearOperator`, the linear KKT system central to the QSS algorithm is solved indirectly, as opposed to directly via a factorization. 
+
 
 ### Example
 Nonnegative least squares is a problem of the form
