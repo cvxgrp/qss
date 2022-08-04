@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="qss",
-    version="0.1.3",
+    version="0.1.4",
     author="Luke Volpatti",
     description="QSS: Quadratic-Separable Solver",
     long_description=long_description,
