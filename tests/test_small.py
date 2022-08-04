@@ -391,3 +391,54 @@ def test_warm_start_constrained(_verbose):
     print(x_qss - x_qss2)
     assert np.isclose(qss_result, qss_result2, atol=0.2)
     assert np.all(np.isclose(x_qss, x_qss2, atol=1e-3))
+
+
+def test_abstract_constraints_and_P(_verbose):
+    np.random.seed(1234)
+    p = 100
+    n = 500
+    num_constr = 1
+    G = np.random.rand(n, p)
+    h = np.random.randn(n)
+
+    data = {}
+    data["P"] = G.T @ G
+    data["q"] = -h.T @ G
+    data["r"] = 0.5 * h.T @ h
+    data["A"] = sp.sparse.rand(num_constr, p, density=0.9)
+    data["b"] = np.random.randn(num_constr)
+    data["g"] = [{"g": "is_pos", "args": {}, "range": (0, p)}]
+
+    data["P"] = sp.sparse.csc_matrix(data["P"])
+    data["A"] = sp.sparse.csc_matrix(data["A"])
+
+    # CVXPY
+    x = cp.Variable(p)
+    objective = cp.Minimize(0.5 * cp.sum_squares(G @ x - h))
+    constraints = [x >= 0, data["A"] @ x == data["b"]]
+    prob = cp.Problem(objective, constraints)
+    cvx_result = prob.solve()
+
+    # QSS
+    solver = qss.QSS(data)
+    qss_result, x_qss = solver.solve(verbose=_verbose)
+
+    data["A"] = qss.linearoperator.LinearOperator([[data["A"]]])
+    solver = qss.QSS(data)
+    qss_result_abstract, x_qss = solver.solve(verbose=_verbose)
+
+    assert (
+        prob.solve()
+        == pytest.approx(qss_result, rel=1e-2)
+        == pytest.approx(qss_result_abstract, rel=1e-2)
+    )
+
+    data["P"] = qss.linearoperator.LinearOperator([[data["P"]]])
+    solver = qss.QSS(data)
+    qss_result_abstract, x_qss = solver.solve(verbose=_verbose)
+
+    assert (
+        prob.solve()
+        == pytest.approx(qss_result, rel=1e-2)
+        == pytest.approx(qss_result_abstract, rel=1e-2)
+    )

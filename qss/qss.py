@@ -73,7 +73,10 @@ class QSS:
                 raise ValueError("g function ranges must not overlap.")
 
         # Making copies of the input data and storing
-        self._data["P"] = data["P"].copy()
+        if type(data["P"]) is not linearoperator.LinearOperator:
+            self._data["P"] = data["P"].copy()
+        else:
+            self._data["P"] = data["P"]
         self._data["q"] = np.copy(data["q"])
         self._data["r"] = data["r"]
         self._data["g"] = proximal.GCollection(data["g"])

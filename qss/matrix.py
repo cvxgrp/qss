@@ -58,7 +58,7 @@ class AbstractKKT:
         self._P = P
         self._A = A
         self._rho = rho
-        self._reg = -1e-7 * sp.sparse.eye(self._constr_dim)  # TODO: need this?
+        self._reg = 0  # TODO: need this?
         self._splinop = sp.sparse.linalg.LinearOperator(
             (self._dim + self._constr_dim, self._dim + self._constr_dim),
             matvec=self.matvec,
@@ -67,16 +67,14 @@ class AbstractKKT:
 
     def matvec(self, v):
         res = np.zeros(self._dim + self._constr_dim)
-        res[: self._dim] += self._P @ v[: self._dim]
+        res[: self._dim] += self._P @ v[: self._dim] + self._rho * v[: self._dim]
         res[: self._dim] += self._A.rmatvec(v[self._dim :])
         res[self._dim :] += self._A.matvec(v[: self._dim])
-        res[self._dim :] += self._reg @ v[self._dim :]
+        res[self._dim :] += self._reg * v[self._dim :]
         return res
 
     def solve(self, rhs):
-        # TODO: fix this so that it uses minres but doesn't give not symmetric
-        # error.
-        return sp.sparse.linalg.gmres(self._splinop, rhs)[0]
+        return sp.sparse.linalg.gmres(self._splinop, rhs, atol="legacy")[0]
 
     def update_rho(self, new_rho):
         self._rho = new_rho

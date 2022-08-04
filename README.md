@@ -113,9 +113,11 @@ A = LinearOperator([
 Where `F` is a `scipy.sparse.linalg.LinearOperator` that implements the Fourier transform and `I` is a SciPy sparse identity matrix. 
 
 There are several helper functions available to facilitate the creation of `LinearOperator`s, all accessible through `qss.linearoperator`: 
-- `block_diag(D)`: Returns a block diagonal `LinearOperator` from `D`, a list of linear operators (Scipy sparse matrix, `scipy.sparse.linalg.LinearOperator`, or `qss.linearoperator.LinearOperator`).
+- `block_diag(D)`: Returns a block diagonal `LinearOperator` from `D`, a list of linear operators (SciPy sparse matrix, `scipy.sparse.linalg.LinearOperator`, or `qss.linearoperator.LinearOperator`).
 - `hstack(D)`: Horizontally concatenates list of linear operators `D` into a single `LinearOperator`.
-- `vstack(D)`: Vertically concatenates a list of linear operators `D` into a single `LinearOperator`. 
+- `vstack(D)`: Vertically concatenates a list of linear operators `D` into a single `LinearOperator`.
+
+Left and right matrix multiplication between a `LinearOperator` and a NumPy array is supported. Multiplication between `LinearOperator`s is currently not supported. Matrix-vector multiplication between a `LinearOperator` `F` and a NumPy array `v` can be achieved with `F.matvec(v)` or `F @ v`. Multiplication with the adjoint of `F` can be achieved with `F.rmatvec(v)` or `v @ F`. 
 
 Note that solve times may be slower when `LinearOperator`s are involved. If either `P` or `A` is a `LinearOperator`, the linear KKT system central to the QSS algorithm is solved indirectly, as opposed to directly via a factorization. 
 

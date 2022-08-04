@@ -3,6 +3,9 @@ import scipy as sp
 
 
 class LinearOperator:
+    # Ensure that LinearOperator's '@' gets called before NumPy's.
+    __array_priority__ = 10.1
+
     def __init__(self, A):
         self._nrows = 0
         self._ncols = 0
@@ -55,6 +58,12 @@ class LinearOperator:
 
         self._A = A
         self.shape = (self._nrows, self._ncols)
+
+    def __matmul__(self, v):
+        return self.matvec(v)
+
+    def __rmatmul__(self, v):
+        return self.rmatvec(v)
 
     def matvec(self, v):
         if v.shape[0] != self._ncols:
