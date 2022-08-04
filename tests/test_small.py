@@ -393,7 +393,7 @@ def test_warm_start_constrained(_verbose):
     assert np.all(np.isclose(x_qss, x_qss2, atol=1e-3))
 
 
-def test_abstract_constraints(_verbose):
+def test_abstract_constraints_and_P(_verbose):
     np.random.seed(1234)
     p = 100
     n = 500
@@ -424,6 +424,16 @@ def test_abstract_constraints(_verbose):
     qss_result, x_qss = solver.solve(verbose=_verbose)
 
     data["A"] = qss.linearoperator.LinearOperator([[data["A"]]])
+    solver = qss.QSS(data)
+    qss_result_abstract, x_qss = solver.solve(verbose=_verbose)
+
+    assert (
+        prob.solve()
+        == pytest.approx(qss_result, rel=1e-2)
+        == pytest.approx(qss_result_abstract, rel=1e-2)
+    )
+
+    data["P"] = qss.linearoperator.LinearOperator([[data["P"]]])
     solver = qss.QSS(data)
     qss_result_abstract, x_qss = solver.solve(verbose=_verbose)
 
