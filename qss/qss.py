@@ -139,9 +139,13 @@ class QSS:
         self._scaling["equil_scaling"] = np.ones(self._data["dim"])
         self._scaling["obj_scale"] = 1
 
-    def _reset_iterates(self):
-        self._iterates["x"] = np.zeros(self._data["dim"])
-        self._iterates["y"] = np.zeros(self._data["dim"])
+    def _reset_iterates(self, random=False):
+        if random:
+            self._iterates["x"] = np.random.randn(self._data["dim"])
+            self._iterates["y"] = np.random.randn(self._data["dim"])
+        else:
+            self._iterates["x"] = np.zeros(self._data["dim"])
+            self._iterates["y"] = np.zeros(self._data["dim"])
         self._iterates["obj_val"] = None
 
     def _reset_kkt_system(self):
@@ -182,6 +186,8 @@ class QSS:
         self._options["line_search"] = line_search
         self._options["algorithms"] = algorithms
         self._options["verbose"] = verbose
+
+        np.random.seed(1234)
 
         if self._options["verbose"]:
             util.print_info()
@@ -230,39 +236,84 @@ class QSS:
                 )
             )
 
-        max_iter_list = self._options[
-            "max_iter"
-        ]  # TODO get rid of this or make more elegant
-        if type(max_iter_list) is int:
-            max_iter_list = [max_iter_list]
-        if type(max_iter_list) is not list:
-            raise ValueError("max_iter should be an integer or a list.")
-        for i, algorithm in enumerate(algorithms):
-            if i == 0 and algorithm == "proj_sd":
-                self._iterates["x"] = sp.sparse.linalg.lsqr(
-                    self._data["A"], self._data["b"], atol=1e-12, btol=1e-12
-                )[0]
-            self._options["max_iter"] = max_iter_list[i]
-            if algorithm == "proj_sd":
-                self._iterates = descent.proj_sd(
-                    self._data,
-                    self._kkt_system,
-                    **self._iterates,
-                    **self._scaling,
-                    **self._options,
-                )
-            elif algorithm == "admm":
-                self._iterates = admm.admm(
-                    self._data,
-                    self._kkt_system,
-                    self._options,
-                    **self._iterates,
-                    **self._scaling,
-                )
-            else:
-                raise ValueError("Invalid algorithm specified")
+        if self._data["g"]._is_convex:
+            max_iter_list = self._options[
+                "max_iter"
+            ]  # TODO get rid of this or make more elegant
+            if type(max_iter_list) is int:
+                max_iter_list = [max_iter_list]
+            if type(max_iter_list) is not list:
+                raise ValueError("max_iter should be an integer or a list.")
+            for i, algorithm in enumerate(algorithms):
+                if i == 0 and algorithm == "proj_sd":
+                    self._iterates["x"] = sp.sparse.linalg.lsqr(
+                        self._data["A"], self._data["b"], atol=1e-12, btol=1e-12
+                    )[0]
+                self._options["max_iter"] = max_iter_list[i]
+                if algorithm == "proj_sd":
+                    self._iterates = descent.proj_sd(
+                        self._data,
+                        self._kkt_system,
+                        **self._iterates,
+                        **self._scaling,
+                        **self._options,
+                    )
+                elif algorithm == "admm":
+                    self._iterates = admm.admm(
+                        self._data,
+                        self._kkt_system,
+                        self._options,
+                        **self._iterates,
+                        **self._scaling,
+                    )
+                else:
+                    raise ValueError("Invalid algorithm specified")
 
-        self._options["max_iter"] = max_iter_list
+            self._options["max_iter"] = max_iter_list
+
+        else: 
+            orig_max_iter = self._options["max_iter"]
+            orig_rho = self._options["rho"]
+            orig_alpha = self._options["alpha"]
+            orig_warm_start = self._options["warm_start"]
+
+            self._options["max_iter"] = 100
+
+            best_obj = np.inf
+            best_x = None
+            best_y = None
+
+            rho_list = [0.01, 0.1, 1, 10]
+            alpha_list = [1, 1, 1, 0.1]
+            for i in range(10):
+                self._reset_iterates(random=True)
+
+                for j in range(len(rho_list)):
+                    # TODO: Random start
+                    self._options["rho"] = rho_list[j]
+                    self._options["alpha"] = alpha_list[j]
+                    self._kkt_system.update_rho(rho_list[j])
+                    self._iterates = admm.admm(
+                        self._data,
+                        self._kkt_system,
+                        self._options,
+                        **self._iterates,
+                        **self._scaling,
+                    )
+                if self._iterates["obj_val"] < best_obj:
+                    best_obj = self._iterates["obj_val"]
+                    best_x = self._iterates["x"]
+                    best_y = self._iterates["y"]
+
+            self._iterates = {}
+            self._iterates["obj_val"] = best_obj
+            self._iterates["x"] = best_x
+            self._iterates["y"] = best_y
+
+            self._options["max_iter"] = orig_max_iter
+            self._options["rho"] = orig_rho
+            self._options["alpha"] = orig_alpha
+            self._options["warm_start"] = orig_warm_start
 
         # Clean up preconditioning
         if self._options["precond"] and not self._data["abstract_constr"]:
