@@ -31,7 +31,8 @@ def evaluate_stop_crit(xk1, zk, zk1, uk1, dim, rho, eps_abs, eps_rel, P, q, ord=
         )
         if (
             np.linalg.norm(xk1 - zk1, ord=np.inf) < epri
-            and np.linalg.norm(P @ xk1 + q + rho * uk1, ord=np.inf) < edual
+            # and np.linalg.norm(P @ xk1 + q + rho * uk1, ord=np.inf) < edual
+            and np.linalg.norm(rho * (zk - zk1), ord=np.inf) < edual
         ):
             return True
         return False

@@ -31,8 +31,8 @@ def update_rho(
         * np.linalg.norm(rho * uk1)
         / (
             max(
-                np.linalg.norm(xk1, ord=np.inf),
-                np.linalg.norm(zk1, ord=np.inf),
+                np.linalg.norm(xk1, ord=2),
+                np.linalg.norm(zk1, ord=2),
             )
             + 1e-30
         )
@@ -125,8 +125,8 @@ def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
         uk1 = uk + alpha * xk1 + (1 - alpha) * zk - zk1
 
         # Calculate residuals and objective
-        r_prim = np.linalg.norm(xk1 - zk1, ord=np.inf)
-        r_dual = np.linalg.norm(rho * (zk - zk1), ord=np.inf)
+        r_prim = np.linalg.norm(xk1 - zk1, ord=2)
+        r_dual = np.linalg.norm(rho * (zk - zk1), ord=2)
         obj_val = util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling)
 
         # Check if we should stop
