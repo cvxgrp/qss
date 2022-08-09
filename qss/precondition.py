@@ -17,6 +17,9 @@ def ruiz(data, scaling):
     Abar = data["A"]
     bbar = data["b"]
     rbar = data["r"]
+    gbar = data["g"]
+
+    g_weights = gbar.get_weights()
 
     while (
         np.linalg.norm(1 - delta1, ord=np.inf) > eps_equil
@@ -30,7 +33,9 @@ def ruiz(data, scaling):
         Abarnorm[Abarnorm == 0] = 1
         ATbarnorm[ATbarnorm == 0] = 1
 
-        delta1 = 1 / np.maximum(Pbarnorm, Abarnorm)
+        maxes = np.maximum(Pbarnorm, Abarnorm)
+        #maxes = np.maximum(maxes, g_weights)
+        delta1 = 1 / maxes
         delta2 = 1 / ATbarnorm
 
         Delta1 = sp.sparse.diags(delta1)
@@ -40,18 +45,24 @@ def ruiz(data, scaling):
         Abar = Delta2 @ Abar @ Delta1
         qbar = Delta1 @ qbar
         bbar = Delta2 @ bbar
+        g_weights = Delta1 @ g_weights
 
         # TODO: Look into whether this is beneficial or not
         gamma = 1 / max(
             # TODO: this is redundant - will be calculated in the next iter too
             np.mean(sp.sparse.linalg.norm(Pbar, ord=np.inf, axis=0)),
             np.linalg.norm(qbar, ord=np.inf),
+            np.max(g_weights)
+            #gbar.max_weight * np.max(S1.diagonal())
         )
         # gamma = 1
 
         Pbar *= gamma
         qbar *= gamma
         rbar *= gamma
+        # Below go together
+        gbar.scale_weights(gamma)
+        g_weights *= gamma
 
         S1 = Delta1 @ S1
         S2 = Delta2 @ S2

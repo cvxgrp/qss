@@ -79,7 +79,7 @@ class QSS:
             self._data["P"] = data["P"]
         self._data["q"] = np.copy(data["q"])
         self._data["r"] = data["r"]
-        self._data["g"] = proximal.GCollection(data["g"])
+        self._data["g"] = proximal.GCollection(data["g"], self._data["dim"])
 
         self._data["abstract_constr"] = False
         if ("A" in data) and (type(data["A"]) is linearoperator.LinearOperator):

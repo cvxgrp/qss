@@ -118,7 +118,7 @@ def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
 
         # Update z
         zk1 = g.prox(
-            rho / obj_scale, equil_scaling, alpha * xk1 + (1 - alpha) * zk + uk
+            rho, equil_scaling, alpha * xk1 + (1 - alpha) * zk + uk
         )
 
         # Update u

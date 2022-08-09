@@ -452,9 +452,11 @@ class IsBool(G):
 
 
 class GCollection:
-    def __init__(self, g_list):
+    def __init__(self, g_list, dim):
         self._g_list = []
         self._is_convex = True
+        self._dim = dim
+        self.max_weight = 0
 
         for g in g_list:
             weight = 1
@@ -472,6 +474,7 @@ class GCollection:
                 shift = g["args"]["shift"]
             else:
                 shift = 0
+            self.max_weight = max(weight, self.max_weight)
             range = g["range"]
             name = g["g"]
 
@@ -567,3 +570,21 @@ class GCollection:
             rs[start_index:end_index] = g_rs
 
         return ls, rs
+
+    def scale_weights(self, w):
+        for func in self._g_list:
+            if "args" in func:
+                func["args"]["weight"] *= w
+            else: 
+                func["args"] = {}
+                func["args"]["weight"] = w
+        self.max_weight *= w
+
+    def get_weights(self):
+        weights = np.ones(self._dim)
+        for func in self._g_list:
+            if "args" in func and "weight" in func["args"]:
+                range = func["range"]
+                weights[range[0]:range[1]] *= func["args"]["weight"]
+
+        return weights
