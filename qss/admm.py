@@ -100,6 +100,16 @@ def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
     uk1 = np.zeros(dim)
     nuk1 = np.zeros(dim)
 
+    # Residuals to return
+    prim_admm_l2 = np.array([])
+    dual_admm_l2 = np.array([])
+    prim_admm_linf = np.array([])
+    dual_admm_linf = np.array([])
+    prim_orig_l2 = np.array([])
+    dual_orig_l2 = np.array([])
+    prim_orig_linf = np.array([])
+    dual_orig_linf = np.array([])
+
     iter_num = 0
     refactorization_count = 0
     total_refactorization_time = 0
@@ -128,6 +138,17 @@ def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
         r_prim = np.linalg.norm(xk1 - zk1, ord=2)
         r_dual = np.linalg.norm(rho * (zk - zk1), ord=2)
         obj_val = util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling)
+
+        # Record residuals
+        if iter_num % 10 == 0:
+            prim_admm_l2 = np.append(prim_admm_l2, np.linalg.norm(xk1 - zk1, ord=2))
+            dual_admm_l2 = np.append(dual_admm_l2, np.linalg.norm(rho * (zk - zk1), ord=2))
+            prim_admm_linf = np.append(prim_admm_linf, np.linalg.norm(xk1 - zk1, ord=np.inf))
+            dual_admm_linf = np.append(dual_admm_linf, np.linalg.norm(rho * (zk - zk1), ord=np.inf))
+            prim_orig_l2 = np.append(prim_orig_l2, np.linalg.norm(A @ zk1 - b, ord=2))
+            dual_orig_l2 = np.append(dual_orig_l2, np.linalg.norm(P @ zk1 + q + A.T @ nuk1 + rho * uk1, ord=2))
+            prim_orig_linf = np.append(prim_orig_linf, np.linalg.norm(A @ zk1 - b, ord=np.inf))
+            dual_orig_linf = np.append(dual_orig_linf, np.linalg.norm(P @ zk1 + q + A.T @ nuk1 + rho * uk1, ord=np.inf))
 
         # Check if we should stop
         if iter_num == max_iter or (
@@ -216,4 +237,15 @@ def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
             )
         )
 
-    return iterates
+    residuals = {
+        "prim_admm_l2": prim_admm_l2,
+        "dual_admm_l2": dual_admm_l2,
+        "prim_admm_linf": prim_admm_linf,
+        "dual_admm_linf": dual_admm_linf,
+        "prim_orig_l2": prim_orig_l2,
+        "dual_orig_l2": dual_orig_l2,
+        "prim_orig_linf": prim_orig_linf,
+        "dual_orig_linf": dual_orig_linf,
+    }
+
+    return iterates, residuals

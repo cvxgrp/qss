@@ -114,6 +114,9 @@ class QSS:
         self._iterates = {}
         self._reset_iterates()
 
+        # Residual information
+        self._residuals = {}    
+
         # KKT system information
         self._kkt_system = None
 
@@ -132,6 +135,7 @@ class QSS:
         self._options["descent_method"] = None
         self._options["line_search"] = None
         self._options["algorithms"] = None
+        self._options["return_residuals"] = None
         self._options["verbose"] = None
         return
 
@@ -169,6 +173,7 @@ class QSS:
         descent_method="momentum",
         line_search=True,
         algorithms=["admm"],
+        return_residuals=False,
         verbose=False,
     ):
 
@@ -185,6 +190,7 @@ class QSS:
         self._options["descent_method"] = descent_method
         self._options["line_search"] = line_search
         self._options["algorithms"] = algorithms
+        self._options["return_residuals"] = return_residuals
         self._options["verbose"] = verbose
 
         np.random.seed(1234)
@@ -259,7 +265,7 @@ class QSS:
                         **self._options,
                     )
                 elif algorithm == "admm":
-                    self._iterates = admm.admm(
+                    self._iterates, self._residuals = admm.admm(
                         self._data,
                         self._kkt_system,
                         self._options,
@@ -332,4 +338,5 @@ class QSS:
         return (
             self._iterates["obj_val"],
             np.copy(self._iterates["x"]),
+            self._residuals
         )
