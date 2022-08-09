@@ -1,3 +1,4 @@
+from functools import partial
 import numpy as np
 import scipy as sp
 import time
@@ -7,33 +8,16 @@ PRINT_WIDTH = 63
 BULLET_WIDTH = 32
 
 
-def evaluate_stop_crit(xk1, zk, zk1, uk1, dim, rho, eps_abs, eps_rel, P, q, ord=2):
+def evaluate_stop_crit(xk1, zk, zk1, uk1, dim, rho, eps_abs, eps_rel, ord=2):
     if ord == 2:
-        epri = np.sqrt(dim) * eps_abs + eps_rel * max(
-            np.linalg.norm(xk1, ord=2), np.linalg.norm(zk1, ord=2)
-        )
-        edual = np.sqrt(dim) * eps_abs + eps_rel * np.linalg.norm(rho * uk1, ord=2)
-        if (
-            np.linalg.norm(xk1 - zk1, ord=2) < epri
-            and np.linalg.norm(rho * (zk - zk1), ord=2) < edual
-        ):
-            return True
-        return False
-
+        func = partial(np.linalg.norm, ord=2)
     elif ord == np.inf:
-        epri = eps_abs + eps_rel * max(
-            np.linalg.norm(xk1, ord=np.inf), np.linalg.norm(zk1, ord=np.inf)
-        )
-        edual = eps_abs + eps_rel * max(
-            np.linalg.norm(P @ xk1, ord=np.inf),
-            np.linalg.norm(rho * uk1, ord=np.inf),
-            np.linalg.norm(q, ord=np.inf),
-        )
-        if (
-            np.linalg.norm(xk1 - zk1, ord=np.inf) < epri
-            and np.linalg.norm(P @ xk1 + q + rho * uk1, ord=np.inf) < edual
-        ):
-            return True
+        func = partial(np.linalg.norm, ord=np.inf)
+    epri = np.sqrt(dim) * eps_abs + eps_rel * max(func(xk1), func(zk1))
+    edual = np.sqrt(dim) * eps_abs + eps_rel * func(rho * uk1)
+    if (func(xk1 - zk1) < epri and func(rho * (zk - zk1)) < edual):
+        return True
+    else:
         return False
 
 
