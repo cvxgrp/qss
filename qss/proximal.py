@@ -43,7 +43,7 @@ class G(ABC):
 
     def prox(self, rho, equil_scaling, v):
         new_scale = equil_scaling * self._scale
-        new_rho = rho / (self._weight * self._scale ** 2)
+        new_rho = rho / (self._weight * new_scale ** 2)
 
         return (
             self.prox_raw(new_rho, new_scale * v - self._shift) + self._shift
@@ -82,7 +82,8 @@ class Abs(G):
         return np.abs(v)
 
     def prox_raw(self, rho, v):
-        return np.maximum(v - 1 / rho, 0) - np.maximum(-v - 1 / rho, 0)
+        rho_local = 1e2 * rho
+        return np.maximum(v - 1 / rho_local, 0) - np.maximum(-v - 1 / rho_local, 0)
 
     def subdiff_raw(self, v):
         v = np.asarray(v)
