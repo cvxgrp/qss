@@ -65,4 +65,5 @@ def ruiz(data, scaling):
     data["b"] = bbar
 
     scaling["equil_scaling"] = S1.diagonal()
+    scaling["constr_scaling"] = S2.diagonal()
     scaling["obj_scale"] = c

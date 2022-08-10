@@ -23,16 +23,31 @@ def update_rho(
     xk1,
     zk1,
     uk1,
+    equil_scaling,
+    constr_scaling,
+    obj_scale,
+    nuk1,
+    P,
+    q,
+    A,
+    b,
+    ord=2,
 ):
     # Add 1e-30 to denominators to avoid divide by zero
     new_rho_candidate = rho * np.sqrt(
         r_prim
         / (r_dual + 1e-30)
-        * np.linalg.norm(rho * uk1)
+        * max(
+            np.linalg.norm(P @ zk1 / equil_scaling, ord=ord),
+            np.linalg.norm(q / equil_scaling, ord=ord),
+            np.linalg.norm(A.T @ nuk1 / equil_scaling, ord=ord),
+            np.linalg.norm(rho * uk1 / equil_scaling, ord=ord),
+        )
+        / obj_scale
         / (
             max(
-                np.linalg.norm(xk1, ord=2),
-                np.linalg.norm(zk1, ord=2),
+                np.linalg.norm(A @ zk1 / constr_scaling, ord=ord),
+                np.linalg.norm(b / constr_scaling, ord=ord),
             )
             + 1e-30
         )
@@ -64,7 +79,9 @@ def update_rho(
     )
 
 
-def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
+def admm(
+    data, kkt_system, options, x, y, equil_scaling, constr_scaling, obj_scale, **kwargs
+):
     if options["verbose"]:
         print("")
         print("ADMM solve".center(util.PRINT_WIDTH))
@@ -124,26 +141,33 @@ def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
         # Update u
         uk1 = uk + alpha * xk1 + (1 - alpha) * zk - zk1
 
+        ord = np.inf
         # Calculate residuals and objective
-        r_prim = np.linalg.norm(xk1 - zk1, ord=2)
-        r_dual = np.linalg.norm(rho * (zk - zk1), ord=2)
+        r_prim = np.linalg.norm((A @ zk1 - b) / constr_scaling, ord=ord)
+        r_dual = np.linalg.norm(
+            (P @ zk1 + q + A.T @ nuk1 + rho * uk1) / equil_scaling / obj_scale, ord=ord
+        )
         obj_val = util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling)
 
         # Check if we should stop
         if iter_num == max_iter or (
             iter_num % 10 == 0
             and util.evaluate_stop_crit(
-                xk1,
-                zk,
                 zk1,
                 uk1,
+                nuk1,
                 dim,
                 rho,
                 eps_abs,
                 eps_rel,
                 P,
                 q,
-                ord=2,
+                A,
+                b,
+                equil_scaling,
+                constr_scaling,
+                obj_scale,
+                ord=ord,
             )
         ):
             finished = True
@@ -176,6 +200,15 @@ def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
                 xk1,
                 zk1,
                 uk1,
+                equil_scaling,
+                constr_scaling,
+                obj_scale,
+                nuk1,
+                P,
+                q,
+                A,
+                b,
+                ord=ord,
             )
             options["rho"] = rho  # Update globally
 

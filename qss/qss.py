@@ -271,7 +271,7 @@ class QSS:
 
             self._options["max_iter"] = max_iter_list
 
-        else: 
+        else:
             orig_max_iter = self._options["max_iter"]
             orig_rho = self._options["rho"]
             orig_alpha = self._options["alpha"]
