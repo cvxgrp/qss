@@ -43,7 +43,7 @@ class G(ABC):
 
     def prox(self, rho, equil_scaling, v):
         new_scale = equil_scaling * self._scale
-        new_rho = rho / (self._weight * new_scale**2)
+        new_rho = rho / (self._weight * self._scale ** 2)
 
         return (
             self.prox_raw(new_rho, new_scale * v - self._shift) + self._shift
