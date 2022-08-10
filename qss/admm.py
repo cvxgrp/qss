@@ -31,8 +31,8 @@ def update_rho(
         * np.linalg.norm(rho * uk1)
         / (
             max(
-                np.linalg.norm(xk1, ord=np.inf),
-                np.linalg.norm(zk1, ord=np.inf),
+                np.linalg.norm(xk1, ord=2),
+                np.linalg.norm(zk1, ord=2),
             )
             + 1e-30
         )
