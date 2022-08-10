@@ -141,7 +141,7 @@ def admm(
         # Update u
         uk1 = uk + alpha * xk1 + (1 - alpha) * zk - zk1
 
-        ord = np.inf
+        ord = 2
         # Calculate residuals and objective
         r_prim = np.linalg.norm((A @ zk1 - b) / constr_scaling, ord=ord)
         r_dual = np.linalg.norm(
