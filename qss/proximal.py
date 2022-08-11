@@ -547,7 +547,9 @@ class GCollection:
             start_index, end_index = item["range"]
             func = item["func"]
             output[start_index:end_index] = func.prox(
-                rho, equil_scaling[start_index:end_index], v[start_index:end_index]
+                rho[start_index:end_index],
+                equil_scaling[start_index:end_index],
+                v[start_index:end_index],
             )
 
         return output

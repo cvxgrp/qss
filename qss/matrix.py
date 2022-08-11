@@ -5,23 +5,23 @@ from qss import linearoperator
 
 
 class KKT:
-    def __init__(self, P, A, rho):
+    def __init__(self, P, A, rho_vec):
         self._dim = A.shape[1]
         self._constr_dim = A.shape[0]
         self._has_constr = A.nnz != 0
-        self._rho = rho
+        self._rho = rho_vec
 
         reg = -1e-7
         # TODO: check if has constraints
         if self._has_constr:
             self._raw_system = sp.sparse.vstack(
                 [
-                    sp.sparse.hstack([P + rho * sp.sparse.identity(self._dim), A.T]),
+                    sp.sparse.hstack([P + sp.sparse.diags(rho_vec), A.T]),
                     sp.sparse.hstack([A, reg * sp.sparse.eye(self._constr_dim)]),
                 ]
             )
         else:
-            self._raw_system = P + rho * sp.sparse.identity(self._dim)
+            self._raw_system = P + sp.sparse.diags(rho_vec)
 
         self._fac_system = qdldl.Solver(self._raw_system)
 
@@ -32,14 +32,14 @@ class KKT:
         if self._has_constr:
             I0_matrix = sp.sparse.block_diag(
                 [
-                    sp.sparse.identity(self._dim, format="csc"),
+                    sp.sparse.diags(new_rho - self._rho, format="csc"),
                     sp.sparse.csc_matrix((self._constr_dim, self._constr_dim)),
                 ]
             )
         else:
-            I0_matrix = sp.sparse.identity(self._dim, format="csc")
+            I0_matrix = sp.sparse.diags(new_rho - self._rho, format="csc")
 
-        self._raw_system += (new_rho - self._rho) * I0_matrix
+        self._raw_system += I0_matrix
         self._fac_system.update(self._raw_system)
 
         self._rho = new_rho

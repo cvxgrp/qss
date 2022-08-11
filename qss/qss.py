@@ -216,6 +216,8 @@ class QSS:
                     )
                 )
 
+        rho_vec = self._options["rho"] * np.ones(self._data["dim"])
+
         # Constructing KKT matrix
         if self._options["verbose"]:
             factorization_start_time = time.time()
@@ -224,9 +226,7 @@ class QSS:
                 self._data["P"], self._data["A"], self._options["rho"]
             )
         else:
-            self._kkt_system = matrix.KKT(
-                self._data["P"], self._data["A"], self._options["rho"]
-            )
+            self._kkt_system = matrix.KKT(self._data["P"], self._data["A"], rho_vec)
         if self._options["verbose"]:
             print(
                 "{} {}{}".format(
@@ -271,7 +271,7 @@ class QSS:
 
             self._options["max_iter"] = max_iter_list
 
-        else: 
+        else:
             orig_max_iter = self._options["max_iter"]
             orig_rho = self._options["rho"]
             orig_alpha = self._options["alpha"]
