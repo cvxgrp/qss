@@ -79,7 +79,7 @@ class QSS:
             self._data["P"] = data["P"]
         self._data["q"] = np.copy(data["q"])
         self._data["r"] = data["r"]
-        self._data["g"] = proximal.GCollection(data["g"])
+        self._data["g"] = proximal.GCollection(data["g"], self._data["dim"])
 
         self._data["abstract_constr"] = False
         if ("A" in data) and (type(data["A"]) is linearoperator.LinearOperator):
@@ -271,7 +271,7 @@ class QSS:
 
             self._options["max_iter"] = max_iter_list
 
-        else: 
+        else:
             orig_max_iter = self._options["max_iter"]
             orig_rho = self._options["rho"]
             orig_alpha = self._options["alpha"]

@@ -452,10 +452,11 @@ class IsBool(G):
 
 
 class GCollection:
-    def __init__(self, g_list):
+    def __init__(self, g_list, dim):
         self._g_list = []
         self._is_convex = True
         self._all_zeros = True
+        self.zeros_indices = np.full(dim, True)
 
         for g in g_list:
             weight = 1
@@ -533,6 +534,7 @@ class GCollection:
 
             if name != "zero":
                 self._all_zeros = False
+                self.zeros_indices[range[0] : range[1]] = False
 
     def evaluate(self, v):
         output = np.zeros(np.asarray(v).shape)
