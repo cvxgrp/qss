@@ -28,14 +28,14 @@ def update_rho(
     new_rho_candidate = rho * np.sqrt(
         r_prim
         / (r_dual + 1e-30)
-        * np.linalg.norm(rho * uk1)
-        / (
-            max(
-                np.linalg.norm(xk1, ord=2),
-                np.linalg.norm(zk1, ord=2),
-            )
-            + 1e-30
-        )
+        # * np.linalg.norm(rho * uk1)
+        # / (
+        #     max(
+        #         np.linalg.norm(xk1, ord=2),
+        #         np.linalg.norm(zk1, ord=2),
+        #     )
+        #     + 1e-30
+        # )
     )
 
     # This is for the first iteration

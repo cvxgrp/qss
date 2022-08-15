@@ -14,9 +14,12 @@ class KKT:
         reg = -1e-7
         # TODO: check if has constraints
         if self._has_constr:
+            rho_vec = self._rho * np.ones(self._dim)
+            rho_vec[2000:] = 75 * self._rho
             self._raw_system = sp.sparse.vstack(
                 [
-                    sp.sparse.hstack([P + rho * sp.sparse.identity(self._dim), A.T]),
+                    # sp.sparse.hstack([P + rho * sp.sparse.identity(self._dim), A.T]),
+                    sp.sparse.hstack([P + sp.sparse.diags(rho_vec), A.T]),
                     sp.sparse.hstack([A, reg * sp.sparse.eye(self._constr_dim)]),
                 ]
             )

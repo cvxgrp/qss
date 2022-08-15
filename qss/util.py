@@ -9,13 +9,15 @@ BULLET_WIDTH = 32
 
 def evaluate_stop_crit(xk1, zk, zk1, uk1, dim, rho, eps_abs, eps_rel, P, q, ord=2):
     if ord == 2:
+        rho_vec = rho * np.ones(dim)
+        rho_vec[2000:] = 75 * rho
         epri = np.sqrt(dim) * eps_abs + eps_rel * max(
             np.linalg.norm(xk1, ord=2), np.linalg.norm(zk1, ord=2)
         )
-        edual = np.sqrt(dim) * eps_abs + eps_rel * np.linalg.norm(rho * uk1, ord=2)
+        edual = np.sqrt(dim) * eps_abs + eps_rel * np.linalg.norm(rho_vec * uk1, ord=2)
         if (
             np.linalg.norm(xk1 - zk1, ord=2) < epri
-            and np.linalg.norm(rho * (zk - zk1), ord=2) < edual
+            and np.linalg.norm(rho_vec * (zk - zk1), ord=2) < edual
         ):
             return True
         return False

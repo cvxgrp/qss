@@ -82,7 +82,9 @@ class Abs(G):
         return np.abs(v)
 
     def prox_raw(self, rho, v):
-        return np.maximum(v - 1 / rho, 0) - np.maximum(-v - 1 / rho, 0)
+        local_rho = 75 * rho
+        # local_rho = rho
+        return np.maximum(v - 1 / local_rho, 0) - np.maximum(-v - 1 / local_rho, 0)
 
     def subdiff_raw(self, v):
         v = np.asarray(v)
@@ -561,7 +563,9 @@ class GCollection:
             start_index, end_index = item["range"]
             func = item["func"]
             g_ls, g_rs = func.subdiff(
-                equil_scaling[start_index:end_index], obj_scale, v
+                equil_scaling[start_index:end_index],
+                obj_scale,
+                v[start_index:end_index],
             )
             ls[start_index:end_index] = g_ls
             rs[start_index:end_index] = g_rs
