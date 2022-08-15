@@ -214,3 +214,24 @@ class TestCard:
         assert np.allclose(
             rs, np.array([np.nan, np.nan, 0, np.nan, np.nan]), equal_nan=True
         )
+
+
+class TestGCollection:
+    g1 = [{"g": "abs", "range": (100, 200)}, {"g": "zero", "range": (200, 300)}]
+    gcoll1 = proximal.GCollection(g1)
+
+    g2 = []
+    gcoll2 = proximal.GCollection(g2)
+
+    g3 = [{"g": "zero", "range": (10, 20)}]
+    gcoll3 = proximal.GCollection(g3)
+
+    def test_flags(self):
+        assert self.gcoll1._is_convex is True
+        assert self.gcoll1._all_zeros is False
+
+        assert self.gcoll2._is_convex is True
+        assert self.gcoll2._all_zeros is True
+
+        assert self.gcoll3._is_convex is True
+        assert self.gcoll3._all_zeros is True

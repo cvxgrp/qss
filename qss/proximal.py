@@ -455,6 +455,7 @@ class GCollection:
     def __init__(self, g_list):
         self._g_list = []
         self._is_convex = True
+        self._all_zeros = True
 
         for g in g_list:
             weight = 1
@@ -529,6 +530,9 @@ class GCollection:
             if not func._is_convex:
                 self._is_convex = False
             self._g_list.append({"range": range, "func": func})
+
+            if name != "zero":
+                self._all_zeros = False
 
     def evaluate(self, v):
         output = np.zeros(np.asarray(v).shape)
