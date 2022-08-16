@@ -30,10 +30,20 @@ def update_rho(
 
     refactor = False
     for i, bool_range in enumerate(rho_controller._g.bool_ranges):
-        local_new_rho_cand = rho_controller.rho_by_block[i] * np.sqrt(
+        local_new_rho_cand = np.sqrt(
             np.linalg.norm(r_prim[bool_range], ord=2)
             / (np.linalg.norm(r_dual[bool_range], ord=2) + 1e-30)
+            * np.linalg.norm(rho_controller.rho_by_block[i] * uk1[bool_range])
+            / (
+                max(
+                    np.linalg.norm(xk1[bool_range], ord=2),
+                    np.linalg.norm(zk1[bool_range], ord=2),
+                )
+                + 1e-30
+            )
         )
+
+        local_new_rho_cand = min(max(local_new_rho_cand, RHO_MIN), RHO_MAX)
 
         if local_new_rho_cand / rho_controller.rho_by_block[i] > 5:
             # local_new_rho_cand = rho_controller.rho_by_block[i] * 5
@@ -85,7 +95,6 @@ def admm(
     alpha = options["alpha"]
     eps_abs = options["eps_abs"]
     eps_rel = options["eps_rel"]
-    use_iter_refinement = options["use_iter_refinement"]
     verbose = options["verbose"]
     max_iter = options["max_iter"]
 

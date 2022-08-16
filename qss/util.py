@@ -86,8 +86,16 @@ class RhoController:
         # The last element of rho_by_block corresponds to zeros entries.
         # TODO: the below assumes that there are no "zero" g's.
         self.rho_by_block = rho_init * np.ones(len(g._g_list) + 1)
-        self.rho_by_block[0] = 1e10
-        self.rho_by_block[1] = 1e-10
+        # self.rho_by_block[0] = 1e10
+        # self.rho_by_block[1] = 1e-10
+        # self.rho_by_block = np.ones(len(g._g_list) + 1)
+        # for i in range(len(self.rho_by_block)):
+        #     if i < len(self.rho_by_block) - 1 and type(g._g_list[i]) is not qss.proximal.Zero:
+        #         self.rho_by_block[i] = 1e6
+        #     else:
+        #         self.rho_by_block[i] = 1e-6
+        # self.rho_by_block = 1e-6 * np.ones(len(g._g_list) + 1)
+        # self.rho_by_block[-1] = 1e-6
         self._g = g
 
     def get_rho_vec(self):
