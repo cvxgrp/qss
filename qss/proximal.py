@@ -456,9 +456,12 @@ class GCollection:
         self._g_list = []
         self._is_convex = True
         self._all_zeros = True
-        self.zeros_indices = np.full(dim, True)
+        self.dim = dim
+        self.bool_ranges = np.vstack(
+            [np.full((len(g_list), dim), False), np.full((1, dim), True)]
+        )
 
-        for g in g_list:
+        for i, g in enumerate(g_list):
             weight = 1
             scale = 1
             shift = 0
@@ -534,7 +537,8 @@ class GCollection:
 
             if name != "zero":
                 self._all_zeros = False
-                self.zeros_indices[range[0] : range[1]] = False
+                self.bool_ranges[-1, range[0] : range[1]] = False
+                self.bool_ranges[i, range[0] : range[1]] = True
 
     def evaluate(self, v):
         output = np.zeros(np.asarray(v).shape)
@@ -546,14 +550,16 @@ class GCollection:
 
         return np.sum(output)
 
-    def prox(self, rho, equil_scaling, v):
+    def prox(self, rho_vec, equil_scaling, v):
         output = np.copy(v)
 
         for item in self._g_list:
             start_index, end_index = item["range"]
             func = item["func"]
             output[start_index:end_index] = func.prox(
-                rho, equil_scaling[start_index:end_index], v[start_index:end_index]
+                rho_vec[start_index:end_index],
+                equil_scaling[start_index:end_index],
+                v[start_index:end_index],
             )
 
         return output

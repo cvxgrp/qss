@@ -114,6 +114,9 @@ class QSS:
         self._iterates = {}
         self._reset_iterates()
 
+        # Rho controller
+        self._rho_controller = None
+
         # KKT system information
         self._kkt_system = None
 
@@ -196,6 +199,7 @@ class QSS:
         # Reset problem parameters if not warm starting
         if not self._options["warm_start"]:
             self._reset_iterates()
+            self._rho_controller = None
 
         # Preconditioning
         if self._options["precond"] and not self._data["abstract_constr"]:
@@ -216,16 +220,19 @@ class QSS:
                     )
                 )
 
+        # Initializing rho controller
+        self._rho_controller = util.RhoController(self._data["g"], self._options["rho"])
+
         # Constructing KKT matrix
         if self._options["verbose"]:
             factorization_start_time = time.time()
         if self._data["abstract_constr"]:
             self._kkt_system = matrix.AbstractKKT(
-                self._data["P"], self._data["A"], self._options["rho"]
+                self._data["P"], self._data["A"], self._rho_controller
             )
         else:
             self._kkt_system = matrix.KKT(
-                self._data["P"], self._data["A"], self._options["rho"]
+                self._data["P"], self._data["A"], self._rho_controller
             )
         if self._options["verbose"]:
             print(
@@ -263,6 +270,7 @@ class QSS:
                         self._data,
                         self._kkt_system,
                         self._options,
+                        self._rho_controller,
                         **self._iterates,
                         **self._scaling,
                     )

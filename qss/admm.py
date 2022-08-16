@@ -17,54 +17,53 @@ def update_rho(
     refactorization_count,
     total_refactorization_time,
     kkt_system,
-    rho,
-    r_prim,
-    r_dual,
+    rho_controller,
     xk1,
+    zk,
     zk1,
     uk1,
 ):
-    # Add 1e-30 to denominators to avoid divide by zero
-    new_rho_candidate = rho * np.sqrt(
-        r_prim
-        / (r_dual + 1e-30)
-        * np.linalg.norm(rho * uk1)
-        / (
-            max(
-                np.linalg.norm(xk1, ord=2),
-                np.linalg.norm(zk1, ord=2),
-            )
-            + 1e-30
+    rho_vec = rho_controller.get_rho_vec()
+
+    r_prim = xk1 - zk1
+    r_dual = rho_vec * (zk - zk1)
+
+    refactor = False
+    for i, bool_range in enumerate(rho_controller._g.bool_ranges):
+        local_new_rho_cand = rho_controller.rho_by_block[i] * np.sqrt(
+            np.linalg.norm(r_prim[bool_range], ord=2)
+            / (np.linalg.norm(r_dual[bool_range], ord=2) + 1e-30)
         )
-    )
 
-    # This is for the first iteration
-    if new_rho_candidate == 0:
-        new_rho_candidate = rho
+        if local_new_rho_cand / rho_controller.rho_by_block[i] > 5:
+            # local_new_rho_cand = rho_controller.rho_by_block[i] * 5
+            refactor = True
+        elif rho_controller.rho_by_block[i] / local_new_rho_cand > 5:
+            # local_new_rho_cand = rho_controller.rho_by_block[i] / 5
+            refactor = True
+        else:
+            local_new_rho_cand = rho_controller.rho_by_block[i]
 
-    # Check if new rho is different enough from old to warrant update
-    if new_rho_candidate / rho > 5 or rho / new_rho_candidate > 5:
+        uk1[bool_range] *= rho_controller.rho_by_block[i]
+        rho_controller.rho_by_block[i] = local_new_rho_cand
+        uk1[bool_range] /= rho_controller.rho_by_block[i]
+
+    if refactor:
         refactorization_start_time = time.time()
-        uk1 *= rho  # take back to yk1
-        new_rho_candidate = min(max(new_rho_candidate, RHO_MIN), RHO_MAX)
-        uk1 /= new_rho_candidate
-
-        # Update KKT matrix
-        kkt_system.update_rho(new_rho_candidate)
-
+        kkt_system.update_rho(rho_controller.get_rho_vec())
         return (
-            new_rho_candidate,
             refactorization_count + 1,
             total_refactorization_time + time.time() - refactorization_start_time,
         )
     return (
-        rho,
         refactorization_count,
         total_refactorization_time,
     )
 
 
-def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
+def admm(
+    data, kkt_system, options, rho_controller, x, y, equil_scaling, obj_scale, **kwargs
+):
     if options["verbose"]:
         print("")
         print("ADMM solve".center(util.PRINT_WIDTH))
@@ -82,7 +81,6 @@ def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
     has_constr = data["has_constr"]
     constr_dim = data["constr_dim"]
 
-    rho = options["rho"]
     adaptive_rho = options["adaptive_rho"]
     alpha = options["alpha"]
     eps_abs = options["eps_abs"]
@@ -93,7 +91,9 @@ def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
 
     # ADMM iterates
     zk = x
-    uk = y / rho  # TODO: do smth with equil_scaling/obj_scale here?
+    uk = (
+        y / rho_controller.get_rho_vec()
+    )  # TODO: do smth with equil_scaling/obj_scale here?
     # TODO: initialize uk = -q / rho?
     xk1 = np.zeros(dim)
     zk1 = np.zeros(dim)
@@ -107,18 +107,21 @@ def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
 
     while not finished:
         iter_num += 1
+        rho_vec = rho_controller.get_rho_vec()
 
         # Update x
         if has_constr:
-            kkt_solve = kkt_system.solve(np.concatenate([-q + rho * (zk - uk), b]))
+            kkt_solve = kkt_system.solve(np.concatenate([-q + rho_vec * (zk - uk), b]))
             xk1 = kkt_solve[:dim]
             nuk1 = kkt_solve[dim:]
         else:
-            xk1 = kkt_system.solve(-q + rho * (zk - uk))
+            xk1 = kkt_system.solve(-q + rho_vec * (zk - uk))
 
         # Update z
         zk1 = g.prox(
-            rho / obj_scale, equil_scaling, alpha * xk1 + (1 - alpha) * zk + uk
+            rho_vec / obj_scale,
+            equil_scaling,
+            alpha * xk1 + (1 - alpha) * zk + uk,
         )
 
         # Update u
@@ -126,7 +129,7 @@ def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
 
         # Calculate residuals and objective
         r_prim = np.linalg.norm(xk1 - zk1, ord=2)
-        r_dual = np.linalg.norm(rho * (zk - zk1), ord=2)
+        r_dual = np.linalg.norm(rho_vec * (zk - zk1), ord=2)
         obj_val = util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling)
 
         # Check if we should stop
@@ -138,7 +141,7 @@ def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
                 zk1,
                 uk1,
                 dim,
-                rho,
+                rho_vec,
                 eps_abs,
                 eps_rel,
                 P,
@@ -157,27 +160,25 @@ def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
                 obj_val,
                 r_prim,
                 r_dual,
-                rho,
+                rho_controller.rho_by_block,
                 admm_start_time,
             )
 
         # Update rho
-        if adaptive_rho and (not finished) and (iter_num % 10 == 0):
-            rho, refactorization_count, total_refactorization_time = update_rho(
+        if adaptive_rho and (not finished) and ((iter_num + 1) % 50 == 0):
+            refactorization_count, total_refactorization_time = update_rho(
                 dim,
                 has_constr,
                 constr_dim,
                 refactorization_count,
                 total_refactorization_time,
                 kkt_system,
-                rho,
-                r_prim,
-                r_dual,
+                rho_controller,
                 xk1,
+                zk,
                 zk1,
                 uk1,
             )
-            options["rho"] = rho  # Update globally
 
         xk = xk1
         zk = zk1
@@ -185,7 +186,7 @@ def admm(data, kkt_system, options, x, y, equil_scaling, obj_scale, **kwargs):
 
     iterates = {}
     iterates["x"] = zk1
-    iterates["y"] = rho * uk1
+    iterates["y"] = rho_controller.get_rho_vec() * uk1
     iterates["obj_val"] = util.evaluate_objective(
         P, q, r, g, zk1, obj_scale, equil_scaling
     )
