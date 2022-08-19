@@ -28,7 +28,7 @@ def update_rho(
     A,
     b,
     crit="admm",
-    ord=2,
+    ord=np.inf,
     normalize=True,
 ):
     rho_vec = rho_controller.get_rho_vec()
