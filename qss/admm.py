@@ -22,26 +22,62 @@ def update_rho(
     zk,
     zk1,
     uk1,
+    nuk1,
+    P,
+    q,
+    A,
+    b,
+    crit="admm",
+    ord=2,
+    normalize=True,
 ):
     rho_vec = rho_controller.get_rho_vec()
 
-    r_prim = xk1 - zk1
-    r_dual = rho_vec * (zk - zk1)
+    if crit == "admm":
+        r_prim = xk1 - zk1
+        r_dual = rho_vec * (zk - zk1)
+
+    elif crit == "orig":
+        Azk1 = A @ zk1
+        Pzk1 = P @ zk1
+        ATnuk1 = A.T @ nuk1
+        rhouk1 = rho_vec * uk1
+        r_prim = Azk1 - b
+        r_dual = Pzk1 + q + ATnuk1 + rhouk1
 
     refactor = False
     for i, bool_range in enumerate(rho_controller._g.bool_ranges):
-        local_new_rho_cand = np.sqrt(
-            np.linalg.norm(r_prim[bool_range], ord=2)
-            / (np.linalg.norm(r_dual[bool_range], ord=2) + 1e-30)
-            * np.linalg.norm(rho_controller.rho_by_block[i] * uk1[bool_range])
-            / (
-                max(
-                    np.linalg.norm(xk1[bool_range], ord=2),
-                    np.linalg.norm(zk1[bool_range], ord=2),
-                )
-                + 1e-30
-            )
+        local_new_rho_cand = np.linalg.norm(r_prim[bool_range], ord=ord) / (
+            np.linalg.norm(r_dual[bool_range], ord=ord) + 1e-30
         )
+
+        if normalize:
+            # TODO: implement this! need relative scalings. Going to depend on
+            # order and admm vs. orig
+            if crit == "admm":
+                epri = max(
+                    np.linalg.norm(xk1[bool_range], ord=ord),
+                    np.linalg.norm(zk1[bool_range], ord=ord),
+                )
+                edual = np.linalg.norm(
+                    rho_controller.rho_by_block[i] * uk1[bool_range], ord=ord
+                )
+            elif crit == "orig":
+                # TODO: there's no way to do the orig epri! The dimensions don't
+                # work
+                epri = max(
+                    np.linalg.norm(xk1[bool_range], ord=ord),
+                    np.linalg.norm(zk1[bool_range], ord=ord),
+                )
+                edual = max(
+                    np.linalg.norm(Pzk1, ord=ord),
+                    np.linalg.norm(q, ord=ord),
+                    np.linalg.norm(ATnuk1, ord=ord),
+                    np.linalg.norm(rhouk1, ord=ord),
+                )
+            local_new_rho_cand *= edual / (epri + 1e-30)
+
+        local_new_rho_cand = np.sqrt(local_new_rho_cand)
 
         local_new_rho_cand = min(max(local_new_rho_cand, RHO_MIN), RHO_MAX)
 
@@ -191,6 +227,11 @@ def admm(
                 zk,
                 zk1,
                 uk1,
+                nuk1,
+                P,
+                q,
+                A,
+                b,
             )
 
         xk = xk1

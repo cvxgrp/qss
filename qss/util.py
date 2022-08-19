@@ -28,12 +28,9 @@ def evaluate_stop_crit(
         r_prim = np.linalg.norm(xk1 - zk1, ord=ord)
         r_dual = np.linalg.norm(rho_vec * (zk - zk1), ord=ord)
         epri = eps_rel * max(np.linalg.norm(xk1, ord=ord), np.linalg.norm(zk1, ord=ord))
-        edual = eps_rel * max(
-            np.linalg.norm(rho_vec * zk, ord=ord),
-            np.linalg.norm(rho_vec * zk1, ord=ord),
-        )
+        edual = eps_rel * np.linalg.norm(rho_vec * uk1, ord=ord)
 
-    if crit == "orig":
+    elif crit == "orig":
         Azk1 = A @ zk1
         Pzk1 = P @ zk1
         ATnuk1 = A.T @ nuk1
