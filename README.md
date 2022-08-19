@@ -27,8 +27,8 @@ solver = qss.QSS(data)
 ```
 Use the `solve()` method when ready to solve:
 ```python
-results = solver.solve(eps_abs=1e-4,
-                       eps_rel=1e-4,
+results = solver.solve(eps_abs=1e-5,
+                       eps_rel=1e-5,
                        alpha=1.4,
                        rho=0.1,
                        max_iter=np.inf,
