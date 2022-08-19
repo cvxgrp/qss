@@ -300,11 +300,15 @@ class QSS:
                     # TODO: Random start
                     self._options["rho"] = rho_list[j]
                     self._options["alpha"] = alpha_list[j]
-                    self._kkt_system.update_rho(rho_list[j])
+                    rho_controller = util.RhoController(
+                        self._data["g"], self._options["rho"]
+                    )
+                    self._kkt_system.update_rho(rho_controller.get_rho_vec())
                     self._iterates = admm.admm(
                         self._data,
                         self._kkt_system,
                         self._options,
+                        rho_controller,
                         **self._iterates,
                         **self._scaling,
                     )
