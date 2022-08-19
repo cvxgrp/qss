@@ -42,7 +42,8 @@ def update_rho(
         Pzk1 = P @ zk1
         ATnuk1 = A.T @ nuk1
         rhouk1 = rho_vec * uk1
-        r_prim = Azk1 - b
+        # r_prim = Azk1 - b
+        r_prim = xk1 - zk1
         r_dual = Pzk1 + q + ATnuk1 + rhouk1
 
     refactor = False
@@ -52,8 +53,6 @@ def update_rho(
         )
 
         if normalize:
-            # TODO: implement this! need relative scalings. Going to depend on
-            # order and admm vs. orig
             if crit == "admm":
                 epri = max(
                     np.linalg.norm(xk1[bool_range], ord=ord),
