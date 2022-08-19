@@ -149,13 +149,17 @@ def admm(
                 zk,
                 zk1,
                 uk1,
+                nuk1,
                 dim,
                 rho_vec,
                 eps_abs,
                 eps_rel,
                 P,
                 q,
-                ord=2,
+                A,
+                b,
+                crit="orig",
+                ord=np.inf,
             )
         ):
             finished = True
