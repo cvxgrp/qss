@@ -573,7 +573,9 @@ class GCollection:
             start_index, end_index = item["range"]
             func = item["func"]
             g_ls, g_rs = func.subdiff(
-                equil_scaling[start_index:end_index], obj_scale, v
+                equil_scaling[start_index:end_index],
+                obj_scale,
+                v[start_index:end_index],
             )
             ls[start_index:end_index] = g_ls
             rs[start_index:end_index] = g_rs
