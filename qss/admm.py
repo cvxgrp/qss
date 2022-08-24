@@ -142,7 +142,7 @@ def admm(
     xk1 = np.zeros(dim)
     zk1 = np.zeros(dim)
     uk1 = np.zeros(dim)
-    nuk1 = np.zeros(dim)
+    nuk1 = np.zeros(constr_dim)
 
     iter_num = 0
     refactorization_count = 0
