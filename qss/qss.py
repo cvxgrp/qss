@@ -168,7 +168,7 @@ class QSS:
         rho=0.1,
         adaptive_rho=True,
         max_iter=[np.inf],
-        precond=True,
+        precond=False,
         warm_start=False,
         reg=True,
         use_iter_refinement=False,
