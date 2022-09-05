@@ -11,6 +11,7 @@ G_FUNC_NAMES = {
     "pos",
     "neg",
     "card",
+    "card_constr",
     "quantile",
     "huber",
     "is_int",
@@ -276,6 +277,7 @@ class Card(G):
         return np.where(v == 0, 0, 1)
 
     def prox_raw(self, rho, v):
+        # print(np.sqrt(2/np.max(rho)), np.max(np.abs(v)))
         return np.where(np.abs(v) < np.sqrt(2 / rho), 0, v)
 
     def subdiff_raw(self, v):
@@ -287,6 +289,28 @@ class Card(G):
         rs[v == 0] = 0
 
         return ls, rs
+
+
+class CardConstr(G):
+    def __init__(self, weight, scale, shift, k):
+        super().__init__(weight, scale, shift)
+        self._k = k
+        self._is_convex = False
+
+    def evaluate_raw(self, v):
+        constr_satisfied = np.count_nonzero(v) <= self._k
+        if constr_satisfied:
+            return np.zeros(v.shape)
+        else:
+            return np.inf * np.ones(v.shape)
+
+    def prox_raw(self, rho, v):
+        non_top_k = np.argpartition(v, -self._k)[:-self._k]
+        v[non_top_k] = 0
+        return v
+    
+    def subdiff_raw(self, v):
+        return np.nan * np.ones(v.shape), np.nan * np.ones(v.shape)
 
 
 class Quantile(G):
@@ -506,6 +530,12 @@ class GCollection:
                 func = Neg(weight, scale, shift)
             elif name == "card":
                 func = Card(weight, scale, shift)
+            elif name == "card_constr":
+                if "args" in g and "k" in g["args"]:
+                    k = g["args"]["k"]
+                else: 
+                    k = 1
+                func = CardConstr(weight, scale, shift, k)
             elif name == "quantile":
                 if "args" in g and "tau" in g["args"]:
                     tau = g["args"]["tau"]

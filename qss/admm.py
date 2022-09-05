@@ -172,8 +172,10 @@ def admm(
         uk1 = uk + alpha * xk1 + (1 - alpha) * zk - zk1
 
         # Calculate residuals and objective
-        r_prim = np.linalg.norm(xk1 - zk1, ord=2)
-        r_dual = np.linalg.norm(rho_vec * (zk - zk1), ord=2)
+        # r_prim = np.linalg.norm(xk1 - zk1, ord=2)
+        # r_dual = np.linalg.norm(rho_vec * (zk - zk1), ord=2)
+        r_prim = np.linalg.norm(A @ zk1 - b, ord=np.inf)
+        r_dual = np.linalg.norm(P @ zk1 + q + A.T @ nuk1 + rho_vec * uk1, ord=np.inf)
         obj_val = util.evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling)
 
         # Check if we should stop

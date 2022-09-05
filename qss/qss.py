@@ -135,6 +135,8 @@ class QSS:
         self._options["descent_method"] = None
         self._options["line_search"] = None
         self._options["algorithms"] = None
+        self._options["schedule_rho"] = None
+        self._options["random_init"] = None
         self._options["verbose"] = None
         return
 
@@ -144,8 +146,9 @@ class QSS:
 
     def _reset_iterates(self, random=False):
         if random:
-            self._iterates["x"] = np.random.randn(self._data["dim"])
-            self._iterates["y"] = np.random.randn(self._data["dim"])
+            np.random.seed(int(time.time()))
+            self._iterates["x"] = 1000 * np.random.randn(self._data["dim"])
+            self._iterates["y"] = 1000 * np.random.randn(self._data["dim"])
         else:
             self._iterates["x"] = np.zeros(self._data["dim"])
             self._iterates["y"] = np.zeros(self._data["dim"])
@@ -172,6 +175,8 @@ class QSS:
         descent_method="momentum",
         line_search=True,
         algorithms=["admm"],
+        schedule_rho=False,
+        random_init=False,
         verbose=False,
     ):
 
@@ -188,6 +193,8 @@ class QSS:
         self._options["descent_method"] = descent_method
         self._options["line_search"] = line_search
         self._options["algorithms"] = algorithms
+        self._options["schedule_rho"] = schedule_rho
+        self._options["random_init"] = random_init
         self._options["verbose"] = verbose
 
         np.random.seed(1234)
@@ -198,7 +205,7 @@ class QSS:
 
         # Reset problem parameters if not warm starting
         if not self._options["warm_start"]:
-            self._reset_iterates()
+            self._reset_iterates(self._options["random_init"])
             self._rho_controller = None
 
         # Preconditioning
@@ -243,7 +250,7 @@ class QSS:
                 )
             )
 
-        if self._data["g"]._is_convex:
+        if self._data["g"]._is_convex or not self._options["schedule_rho"]:
             max_iter_list = self._options[
                 "max_iter"
             ]  # TODO get rid of this or make more elegant
