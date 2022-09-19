@@ -1,6 +1,8 @@
 # QSS: Quadratic-Separable Solver
 QSS solves problems of the form 
+
 $$\begin{equation*} \begin{array}{ll} \text{minimize} & (1/2) x^T P x + q^T x + r + g(x) \\\\ \text{subject to} & Ax = b \end{array} \end{equation*}$$
+
 where $x \in \bf{R}^n$ is the decision variable being optimized over. The
 objective is defined by a positive definite matrix $P \in \bf{S}^n_+$, a vector
 $q \in \bf{R}^n$, a scalar $r \in \bf{R}$, and a $g$ that is separable in the
@@ -124,7 +126,9 @@ Note that solve times may be slower when `LinearOperator`s are involved. If eith
 
 ### Example
 Nonnegative least squares is a problem of the form
+
 $$\begin{equation*} \begin{array}{ll} \text{minimize} & (1/2) \Vert Gx - h \Vert_2^2 \\\\ \text{subject to} & x \geq 0. \end{array} \end{equation*} $$
+
 `qss` can be used to solve this problem as follows:
 ```python
 import numpy as np
