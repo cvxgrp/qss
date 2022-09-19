@@ -58,6 +58,7 @@ class LinearOperator:
 
         self._A = A
         self.shape = (self._nrows, self._ncols)
+        self.T = _TransposedLinearOperator(self)
 
     def __matmul__(self, v):
         return self.matvec(v)
@@ -141,3 +142,24 @@ def hstack(linop_list):
 def vstack(linop_list):
     A = [[block] for block in linop_list]
     return LinearOperator(A)
+
+
+class _TransposedLinearOperator(LinearOperator):
+    __array_priority__ = 10.1
+
+    def __init__(self, A):
+        self.shape = (A.shape[1], A.shape[0])
+        self.A = A
+        return
+
+    def __matmul__(self, v):
+        return self.matvec(v)
+
+    def __rmatmul__(self, v):
+        return self.rmatvec(v)
+
+    def matvec(self, v):
+        return self.A.rmatvec(v)
+
+    def rmatvec(self, v):
+        return self.A.matvec(v)

@@ -11,6 +11,7 @@ G_FUNC_NAMES = {
     "pos",
     "neg",
     "card",
+    "card_constr",
     "quantile",
     "huber",
     "is_int",
@@ -276,6 +277,7 @@ class Card(G):
         return np.where(v == 0, 0, 1)
 
     def prox_raw(self, rho, v):
+        # print(np.sqrt(2/np.max(rho)), np.max(np.abs(v)))
         return np.where(np.abs(v) < np.sqrt(2 / rho), 0, v)
 
     def subdiff_raw(self, v):
@@ -287,6 +289,28 @@ class Card(G):
         rs[v == 0] = 0
 
         return ls, rs
+
+
+class CardConstr(G):
+    def __init__(self, weight, scale, shift, k):
+        super().__init__(weight, scale, shift)
+        self._k = k
+        self._is_convex = False
+
+    def evaluate_raw(self, v):
+        constr_satisfied = np.count_nonzero(v) <= self._k
+        if constr_satisfied:
+            return np.zeros(v.shape)
+        else:
+            return np.inf * np.ones(v.shape)
+
+    def prox_raw(self, rho, v):
+        non_top_k = np.argpartition(v, -self._k)[:-self._k]
+        v[non_top_k] = 0
+        return v
+    
+    def subdiff_raw(self, v):
+        return np.nan * np.ones(v.shape), np.nan * np.ones(v.shape)
 
 
 class Quantile(G):
@@ -452,12 +476,17 @@ class IsBool(G):
 
 
 class GCollection:
-    def __init__(self, g_list):
+    def __init__(self, g_list, dim):
         self._g_list = []
         self._is_convex = True
         self._all_zeros = True
+        self._full_g = False
+        self.dim = dim
+        self.bool_ranges = np.vstack(
+            [np.full((len(g_list), dim), False), np.full((1, dim), True)]
+        )
 
-        for g in g_list:
+        for i, g in enumerate(g_list):
             weight = 1
             scale = 1
             shift = 0
@@ -502,6 +531,12 @@ class GCollection:
                 func = Neg(weight, scale, shift)
             elif name == "card":
                 func = Card(weight, scale, shift)
+            elif name == "card_constr":
+                if "args" in g and "k" in g["args"]:
+                    k = g["args"]["k"]
+                else: 
+                    k = 1
+                func = CardConstr(weight, scale, shift, k)
             elif name == "quantile":
                 if "args" in g and "tau" in g["args"]:
                     tau = g["args"]["tau"]
@@ -533,6 +568,13 @@ class GCollection:
 
             if name != "zero":
                 self._all_zeros = False
+                self.bool_ranges[-1, range[0] : range[1]] = False
+                self.bool_ranges[i, range[0] : range[1]] = True
+            
+        # Check if user-specified g's take up the whole dim
+        if np.all(~self.bool_ranges[-1]):
+            self._full_g = True
+            self.bool_ranges = self.bool_ranges[:-1]
 
     def evaluate(self, v):
         output = np.zeros(np.asarray(v).shape)
@@ -544,14 +586,16 @@ class GCollection:
 
         return np.sum(output)
 
-    def prox(self, rho, equil_scaling, v):
+    def prox(self, rho_vec, equil_scaling, v):
         output = np.copy(v)
 
         for item in self._g_list:
             start_index, end_index = item["range"]
             func = item["func"]
             output[start_index:end_index] = func.prox(
-                rho, equil_scaling[start_index:end_index], v[start_index:end_index]
+                rho_vec[start_index:end_index],
+                equil_scaling[start_index:end_index],
+                v[start_index:end_index],
             )
 
         return output
@@ -565,7 +609,9 @@ class GCollection:
             start_index, end_index = item["range"]
             func = item["func"]
             g_ls, g_rs = func.subdiff(
-                equil_scaling[start_index:end_index], obj_scale, v
+                equil_scaling[start_index:end_index],
+                obj_scale,
+                v[start_index:end_index],
             )
             ls[start_index:end_index] = g_ls
             rs[start_index:end_index] = g_rs

@@ -217,14 +217,14 @@ class TestCard:
 
 
 class TestGCollection:
-    g1 = [{"g": "abs", "range": (100, 200)}, {"g": "zero", "range": (200, 300)}]
-    gcoll1 = proximal.GCollection(g1)
+    g1 = [{"g": "abs", "range": (2, 3)}, {"g": "zero", "range": (3, 5)}]
+    gcoll1 = proximal.GCollection(g1, 5)
 
     g2 = []
-    gcoll2 = proximal.GCollection(g2)
+    gcoll2 = proximal.GCollection(g2, 10)
 
     g3 = [{"g": "zero", "range": (10, 20)}]
-    gcoll3 = proximal.GCollection(g3)
+    gcoll3 = proximal.GCollection(g3, 25)
 
     def test_flags(self):
         assert self.gcoll1._is_convex is True

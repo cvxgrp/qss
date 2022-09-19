@@ -79,7 +79,7 @@ class QSS:
             self._data["P"] = data["P"]
         self._data["q"] = np.copy(data["q"])
         self._data["r"] = data["r"]
-        self._data["g"] = proximal.GCollection(data["g"])
+        self._data["g"] = proximal.GCollection(data["g"], self._data["dim"])
 
         self._data["abstract_constr"] = False
         if ("A" in data) and (type(data["A"]) is linearoperator.LinearOperator):
@@ -94,7 +94,7 @@ class QSS:
             # I'm using the placeholder for now to avoid littering precondition.py with
             # 'if' statements.
             self._data["A"] = sp.sparse.csc_matrix((1, self._data["dim"]))
-            self._data["b"] = np.ones(1)
+            self._data["b"] = np.zeros(1)
             self._data["has_constr"] = False
             self._data["constr_dim"] = 1
         else:
@@ -114,6 +114,9 @@ class QSS:
         self._iterates = {}
         self._reset_iterates()
 
+        # Rho controller
+        self._rho_controller = None
+
         # KKT system information
         self._kkt_system = None
 
@@ -132,6 +135,8 @@ class QSS:
         self._options["descent_method"] = None
         self._options["line_search"] = None
         self._options["algorithms"] = None
+        self._options["schedule_rho"] = None
+        self._options["random_init"] = None
         self._options["verbose"] = None
         return
 
@@ -141,8 +146,10 @@ class QSS:
 
     def _reset_iterates(self, random=False):
         if random:
-            self._iterates["x"] = np.random.randn(self._data["dim"])
-            self._iterates["y"] = np.random.randn(self._data["dim"])
+            np.random.seed(int(time.time()))
+            self._iterates["x"] = 1000 * np.random.randn(self._data["dim"])
+            # self._iterates["y"] = 1000 * np.random.randn(self._data["dim"])
+            self._iterates["y"] = np.zeros(self._data["dim"])
         else:
             self._iterates["x"] = np.zeros(self._data["dim"])
             self._iterates["y"] = np.zeros(self._data["dim"])
@@ -156,19 +163,21 @@ class QSS:
 
     def solve(
         self,
-        eps_abs=1e-4,
-        eps_rel=1e-4,
+        eps_abs=1e-5,
+        eps_rel=1e-5,
         alpha=1.4,
         rho=0.1,
         adaptive_rho=True,
         max_iter=[np.inf],
-        precond=True,
+        precond=False,
         warm_start=False,
         reg=True,
         use_iter_refinement=False,
         descent_method="momentum",
         line_search=True,
         algorithms=["admm"],
+        schedule_rho=False,
+        random_init=False,
         verbose=False,
     ):
 
@@ -185,6 +194,8 @@ class QSS:
         self._options["descent_method"] = descent_method
         self._options["line_search"] = line_search
         self._options["algorithms"] = algorithms
+        self._options["schedule_rho"] = schedule_rho
+        self._options["random_init"] = random_init
         self._options["verbose"] = verbose
 
         np.random.seed(1234)
@@ -195,7 +206,8 @@ class QSS:
 
         # Reset problem parameters if not warm starting
         if not self._options["warm_start"]:
-            self._reset_iterates()
+            self._reset_iterates(self._options["random_init"])
+            self._rho_controller = None
 
         # Preconditioning
         if self._options["precond"] and not self._data["abstract_constr"]:
@@ -216,16 +228,19 @@ class QSS:
                     )
                 )
 
+        # Initializing rho controller
+        self._rho_controller = util.RhoController(self._data["g"], self._options["rho"])
+
         # Constructing KKT matrix
         if self._options["verbose"]:
             factorization_start_time = time.time()
         if self._data["abstract_constr"]:
             self._kkt_system = matrix.AbstractKKT(
-                self._data["P"], self._data["A"], self._options["rho"]
+                self._data["P"], self._data["A"], self._rho_controller
             )
         else:
             self._kkt_system = matrix.KKT(
-                self._data["P"], self._data["A"], self._options["rho"]
+                self._data["P"], self._data["A"], self._rho_controller
             )
         if self._options["verbose"]:
             print(
@@ -236,7 +251,7 @@ class QSS:
                 )
             )
 
-        if self._data["g"]._is_convex:
+        if self._data["g"]._is_convex or not self._options["schedule_rho"]:
             max_iter_list = self._options[
                 "max_iter"
             ]  # TODO get rid of this or make more elegant
@@ -263,6 +278,7 @@ class QSS:
                         self._data,
                         self._kkt_system,
                         self._options,
+                        self._rho_controller,
                         **self._iterates,
                         **self._scaling,
                     )
@@ -271,7 +287,7 @@ class QSS:
 
             self._options["max_iter"] = max_iter_list
 
-        else: 
+        else:
             orig_max_iter = self._options["max_iter"]
             orig_rho = self._options["rho"]
             orig_alpha = self._options["alpha"]
@@ -283,8 +299,8 @@ class QSS:
             best_x = None
             best_y = None
 
-            rho_list = [0.01, 0.1, 1, 10]
-            alpha_list = [1, 1, 1, 0.1]
+            rho_list = [0.01, 0.1, 1, 10, 100]
+            alpha_list = [1, 1, 1, 0.1, 0.01]
             for i in range(10):
                 self._reset_iterates(random=True)
 
@@ -292,11 +308,15 @@ class QSS:
                     # TODO: Random start
                     self._options["rho"] = rho_list[j]
                     self._options["alpha"] = alpha_list[j]
-                    self._kkt_system.update_rho(rho_list[j])
+                    rho_controller = util.RhoController(
+                        self._data["g"], self._options["rho"]
+                    )
+                    self._kkt_system.update_rho(rho_controller.get_rho_vec())
                     self._iterates = admm.admm(
                         self._data,
                         self._kkt_system,
                         self._options,
+                        rho_controller,
                         **self._iterates,
                         **self._scaling,
                     )
@@ -332,4 +352,5 @@ class QSS:
         return (
             self._iterates["obj_val"],
             np.copy(self._iterates["x"]),
+            # np.copy(self._iterates["y"] / self._rho_controller.get_rho_vec())
         )
