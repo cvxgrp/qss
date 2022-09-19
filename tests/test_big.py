@@ -46,7 +46,7 @@ def test_l1_trend_filtering_big(_verbose):
     data["g"] = [{"g": "abs", "range": (T, 2 * T - 2)}]
     data["A"] = sp.sparse.hstack([lmda * D, -sp.sparse.identity(T - 2)])
     solver = qss.QSS(data)
-    options = {"alpha": 1.8, "rho": 0.005, "verbose": _verbose}
+    options = {"verbose": _verbose, "max_iter": 1000} # TODO: remove max_iter
 
     qss_res = testutil.compare_qss_cvxpy(prob, solver, options)
 
@@ -89,7 +89,8 @@ def test_lp_big(_verbose):
 
     # QSS
     solver = qss.QSS(data)
-    options = {"verbose": _verbose}
+    options = {"verbose": _verbose, "max_iter": 10000, "adaptive_rho": False}
+    # TODO: remove options above
 
     qss_res = testutil.compare_qss_cvxpy(prob, solver, options)
 
@@ -160,6 +161,6 @@ def test_quadratic_control_big(_verbose):
     ]
 
     solver = qss.QSS(data)
-    options = {"eps_abs": 1e-7, "eps_rel": 1e-7, "verbose": _verbose}
+    options = {"verbose": _verbose}
 
     qss_res = testutil.compare_qss_cvxpy(prob, solver, options)

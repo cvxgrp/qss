@@ -21,8 +21,8 @@ def evaluate_stop_crit(
     q,
     A,
     b,
-    crit="admm",
-    ord=2,
+    crit="orig",
+    ord=np.inf,
 ):
     if crit == "admm":
         r_prim = np.linalg.norm(xk1 - zk1, ord=ord)

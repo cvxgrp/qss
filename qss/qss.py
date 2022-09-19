@@ -94,7 +94,7 @@ class QSS:
             # I'm using the placeholder for now to avoid littering precondition.py with
             # 'if' statements.
             self._data["A"] = sp.sparse.csc_matrix((1, self._data["dim"]))
-            self._data["b"] = np.ones(1)
+            self._data["b"] = np.zeros(1)
             self._data["has_constr"] = False
             self._data["constr_dim"] = 1
         else:
@@ -148,7 +148,8 @@ class QSS:
         if random:
             np.random.seed(int(time.time()))
             self._iterates["x"] = 1000 * np.random.randn(self._data["dim"])
-            self._iterates["y"] = 1000 * np.random.randn(self._data["dim"])
+            # self._iterates["y"] = 1000 * np.random.randn(self._data["dim"])
+            self._iterates["y"] = np.zeros(self._data["dim"])
         else:
             self._iterates["x"] = np.zeros(self._data["dim"])
             self._iterates["y"] = np.zeros(self._data["dim"])
@@ -298,8 +299,8 @@ class QSS:
             best_x = None
             best_y = None
 
-            rho_list = [0.01, 0.1, 1, 10]
-            alpha_list = [1, 1, 1, 0.1]
+            rho_list = [0.01, 0.1, 1, 10, 100]
+            alpha_list = [1, 1, 1, 0.1, 0.01]
             for i in range(10):
                 self._reset_iterates(random=True)
 
@@ -351,4 +352,5 @@ class QSS:
         return (
             self._iterates["obj_val"],
             np.copy(self._iterates["x"]),
+            # np.copy(self._iterates["y"] / self._rho_controller.get_rho_vec())
         )

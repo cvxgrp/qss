@@ -102,6 +102,7 @@ class TestMatvec:
     linop = LinearOperator([[A, A]])
     x = np.random.randn(linop.shape[1])
     assert np.allclose(linop.matvec(x), A @ x[:10] + A @ x[10:])
+    assert np.allclose(linop.T.rmatvec(x), A @ x[:10] + A @ x[10:])
 
     linop = LinearOperator([[P, A.T], [A, None]])
     x = np.random.randn(P.shape[1] + A.shape[0])

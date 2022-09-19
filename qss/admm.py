@@ -195,8 +195,6 @@ def admm(
                 q,
                 A,
                 b,
-                crit="orig",
-                ord=np.inf,
             )
         ):
             finished = True

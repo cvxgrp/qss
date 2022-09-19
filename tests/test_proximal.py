@@ -229,9 +229,6 @@ class TestGCollection:
     def test_flags(self):
         assert self.gcoll1._is_convex is True
         assert self.gcoll1._all_zeros is False
-        assert (
-            self.gcoll1.zeros_indices == np.array([True, True, False, True, True])
-        ).all()
 
         assert self.gcoll2._is_convex is True
         assert self.gcoll2._all_zeros is True

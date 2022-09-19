@@ -480,6 +480,7 @@ class GCollection:
         self._g_list = []
         self._is_convex = True
         self._all_zeros = True
+        self._full_g = False
         self.dim = dim
         self.bool_ranges = np.vstack(
             [np.full((len(g_list), dim), False), np.full((1, dim), True)]
@@ -569,6 +570,11 @@ class GCollection:
                 self._all_zeros = False
                 self.bool_ranges[-1, range[0] : range[1]] = False
                 self.bool_ranges[i, range[0] : range[1]] = True
+            
+        # Check if user-specified g's take up the whole dim
+        if np.all(~self.bool_ranges[-1]):
+            self._full_g = True
+            self.bool_ranges = self.bool_ranges[:-1]
 
     def evaluate(self, v):
         output = np.zeros(np.asarray(v).shape)

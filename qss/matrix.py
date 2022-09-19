@@ -51,14 +51,15 @@ class KKT:
 
 
 class AbstractKKT:
-    def __init__(self, P, A, rho):
+    def __init__(self, P, A, rho_controller):
         self._dim = A.shape[1]
         self._constr_dim = A.shape[0]
         self.shape = (self._dim, self._constr_dim)
+        self._rho_controller = rho_controller
+        self._rho_vec = np.copy(rho_controller.get_rho_vec())
 
         self._P = P
         self._A = A
-        self._rho = rho
         self._reg = 0  # TODO: need this?
         self._splinop = sp.sparse.linalg.LinearOperator(
             (self._dim + self._constr_dim, self._dim + self._constr_dim),
@@ -68,7 +69,7 @@ class AbstractKKT:
 
     def matvec(self, v):
         res = np.zeros(self._dim + self._constr_dim)
-        res[: self._dim] += self._P @ v[: self._dim] + self._rho * v[: self._dim]
+        res[: self._dim] += self._P @ v[: self._dim] + self._rho_vec * v[: self._dim]
         res[: self._dim] += self._A.rmatvec(v[self._dim :])
         res[self._dim :] += self._A.matvec(v[: self._dim])
         res[self._dim :] += self._reg * v[self._dim :]
@@ -77,8 +78,8 @@ class AbstractKKT:
     def solve(self, rhs):
         return sp.sparse.linalg.gmres(self._splinop, rhs, atol="legacy")[0]
 
-    def update_rho(self, new_rho):
-        self._rho = new_rho
+    def update_rho(self, new_rho_vec):
+        self._rho_vec = new_rho_vec
         # TODO: is below necessary or done already?
         # i.e. does rho update propagate?
         self._splinop = sp.sparse.linalg.LinearOperator(
