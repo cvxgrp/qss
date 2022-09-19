@@ -69,30 +69,35 @@ A list containing the following:
 - `solution`: the solution vector.
 
 ### Separable functions
-The following separable functions are supported: 
-- `"zero"`: $g(x) = 0$
-- `"abs"`: $g(x) = |x|$
-- `"is_pos"`: $g(x) = I(x \geq 0)$
-- `"is_neg"`: $g(x) = I(x \leq 0)$
-- `"is_bound"`: $g(x; lb, ub) = I(lb \leq x \leq ub)$
-    - Default: `lb` = 0, `ub` = 1.
-- `"is_zero"`: $g(x) = I(x == 0)$
-- `"pos"`: $g(x) = \max\\{x, 0\\}$
-- `"neg"`: $g(x) = \max\\{-x, 0\\}$
-- `"card"`: $g(x) = \\{0 \text{ if } x = 0, 1 \text{ else}\\}$
-- `"quantile"`: $g(x; \tau) = 0.5 |x| + (\tau - 0.5) x$ 
-    - `tau` in `(0, 1)` is a scalar.
-    - Default: `tau = 0.5`.
-- `"huber"`: $g(x; M) = \\{x^2 \text{ if } |x| \leq M, 2M|x| - M^2 \text{ else}\\}$
-    - `M > 0` is a scalar.
-    - Default: `M = 1`. 
-- `"is_int"`: $g(x) = I(x \text{ is an integer})$
-- `"is_finite_set"`: $g(x; S) = I(x \in S)$
-    - `S` is a Python set of scalars.
-- `"is_bool"`: $g(x) = I(x \in \{0,1\})$
+The following convex separable functions are supported ( $\mathcal{I}$ is the $\\{0, \infty\\}$ indicator function):
+Function | Parameters | $g_i(x)$
+--- | --- | ---
+`zero` | | $0$
+`abs` | | $\|x\|$
+`is_pos` | | $\mathcal I(x \geq 0)$
+`is_neg` | | $\mathcal I(x \leq 0)$
+`is_bound` | `lb`: lower bound (default 0), `ub`: upper bound (default 1) | $\mathcal I(l \leq x \leq u)$
+`is_zero` | | $\mathcal I(x = 0)$
+`pos` | | $\max\\{x, 0\\}$
+`neg` | | $\max\\{-x, 0\\}$
+`quantile` | `tau`: scalar in $(0, 1)$ | $0.5 \|x\| + (\tau - 0.5) x$
+`huber` | `M`: positive scalar | $x^2 \text{ if } \|x\| \leq M, 2M\|x\| - M^2 \text{ else}$
+
+The following nonconvex separable functions are supported:
+Function | Parameters | $g_i(x)$
+--- | --- | ---
+`card` | | $0$ for $x = 0$; $1$ for $x \neq 0$
+`is_int` | | $\mathcal I(x \text{ is an integer})$
+`is_finite_set` | `S`: Python list of scalars | $\mathcal I(x \in S)$
+`is_bool` | | $\mathcal I(x \in \\{0,1\\})$
 
 The `t` (weight), `a` (scale), `b` (shift) parameters are used to shift and scale the above as follows: `t * g(ax - b)`.
 
+#### Example
+Applying the Huber function to a shifted version of the first 100 entries:
+```python
+[{"g": "huber", "args": {"M": 2, "shift": -5}, "range": (0, 100)}]
+```
 
 ### Abstract linear operators
 QSS comes with built-in support for abstract linear operators via the `qss.linearoperator.LinearOperator` class (hereafter referred to simply as `LinearOperator`).
