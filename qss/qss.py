@@ -126,7 +126,6 @@ class QSS:
         self._options["eps_rel"] = None
         self._options["alpha"] = None
         self._options["rho"] = None
-        self._options["adaptive_rho"] = None
         self._options["max_iter"] = None
         self._options["precond"] = None
         self._options["warm_start"] = None
@@ -135,7 +134,8 @@ class QSS:
         self._options["descent_method"] = None
         self._options["line_search"] = None
         self._options["algorithms"] = None
-        self._options["schedule_rho"] = None
+        self._options["rho_update"] = None
+        self._options["schedule_alpha"] = None
         self._options["random_init"] = None
         self._options["verbose"] = None
         return
@@ -167,7 +167,6 @@ class QSS:
         eps_rel=1e-5,
         alpha=1.4,
         rho=0.1,
-        adaptive_rho=True,
         max_iter=[np.inf],
         precond=False,
         warm_start=False,
@@ -176,7 +175,8 @@ class QSS:
         descent_method="momentum",
         line_search=True,
         algorithms=["admm"],
-        schedule_rho=False,
+        rho_update="adaptive",
+        schedule_alpha=False,
         random_init=False,
         verbose=False,
     ):
@@ -185,7 +185,6 @@ class QSS:
         self._options["eps_rel"] = eps_rel
         self._options["alpha"] = alpha
         self._options["rho"] = rho
-        self._options["adaptive_rho"] = adaptive_rho
         self._options["max_iter"] = max_iter
         self._options["precond"] = precond
         self._options["warm_start"] = warm_start
@@ -194,7 +193,8 @@ class QSS:
         self._options["descent_method"] = descent_method
         self._options["line_search"] = line_search
         self._options["algorithms"] = algorithms
-        self._options["schedule_rho"] = schedule_rho
+        self._options["rho_update"] = rho_update
+        self._options["schedule_alpha"] = schedule_alpha
         self._options["random_init"] = random_init
         self._options["verbose"] = verbose
 
@@ -251,7 +251,7 @@ class QSS:
                 )
             )
 
-        if self._data["g"]._is_convex or not self._options["schedule_rho"]:
+        if self._data["g"]._is_convex or not self._options["rho_update"] == "schedule":
             max_iter_list = self._options[
                 "max_iter"
             ]  # TODO get rid of this or make more elegant
@@ -352,5 +352,5 @@ class QSS:
         return (
             self._iterates["obj_val"],
             np.copy(self._iterates["x"]),
-            # np.copy(self._iterates["y"] / self._rho_controller.get_rho_vec())
+            np.copy(self._iterates["y"] / self._rho_controller.get_rho_vec())
         )

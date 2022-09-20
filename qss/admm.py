@@ -126,7 +126,7 @@ def admm(
     has_constr = data["has_constr"]
     constr_dim = data["constr_dim"]
 
-    adaptive_rho = options["adaptive_rho"]
+    rho_update = options["rho_update"]
     alpha = options["alpha"]
     eps_abs = options["eps_abs"]
     eps_rel = options["eps_rel"]
@@ -213,7 +213,7 @@ def admm(
             )
 
         # Update rho
-        if adaptive_rho and (not finished) and ((iter_num + 1) % 50 == 0):
+        if rho_update == "adaptive" and (not finished) and ((iter_num + 1) % 50 == 0):
             refactorization_count, total_refactorization_time = update_rho(
                 dim,
                 has_constr,
