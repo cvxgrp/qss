@@ -89,7 +89,7 @@ def test_lp_big(_verbose):
 
     # QSS
     solver = qss.QSS(data)
-    options = {"verbose": _verbose, "max_iter": 10000, "adaptive_rho": False}
+    options = {"verbose": _verbose, "max_iter": 10000, "rho_update": "static"}
     # TODO: remove options above
 
     qss_res = testutil.compare_qss_cvxpy(prob, solver, options)

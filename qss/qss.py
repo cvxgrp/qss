@@ -112,7 +112,7 @@ class QSS:
 
         # Iterate information
         self._iterates = {}
-        self._reset_iterates()
+        self._reset_iterates(random=False)
 
         # Rho controller
         self._rho_controller = None
@@ -137,6 +137,7 @@ class QSS:
         self._options["rho_update"] = None
         self._options["schedule_alpha"] = None
         self._options["random_init"] = None
+        self._options["init_seed"] = None
         self._options["verbose"] = None
         return
 
@@ -146,7 +147,7 @@ class QSS:
 
     def _reset_iterates(self, random=False):
         if random:
-            np.random.seed(int(time.time()))
+            np.random.seed(self._options["init_seed"])
             self._iterates["x"] = 1000 * np.random.randn(self._data["dim"])
             # self._iterates["y"] = 1000 * np.random.randn(self._data["dim"])
             self._iterates["y"] = np.zeros(self._data["dim"])
@@ -178,6 +179,7 @@ class QSS:
         rho_update="adaptive",
         schedule_alpha=False,
         random_init=False,
+        init_seed=1234,
         verbose=False,
     ):
 
@@ -196,6 +198,7 @@ class QSS:
         self._options["rho_update"] = rho_update
         self._options["schedule_alpha"] = schedule_alpha
         self._options["random_init"] = random_init
+        self._options["init_seed"] = init_seed
         self._options["verbose"] = verbose
 
         np.random.seed(1234)
@@ -292,40 +295,27 @@ class QSS:
             orig_rho = self._options["rho"]
             orig_warm_start = self._options["warm_start"]
 
-            self._options["max_iter"] = 100
+            num_rhos = 5
+            max_rho = 1e3
+            
+            self._options["max_iter"] = orig_max_iter // num_rhos
+            rho_list = np.logspace(np.log10(orig_rho), np.log10(max_rho), num_rhos)
 
-            best_obj = np.inf
-            best_x = None
-            best_y = None
-
-            rho_list = [0.01, 0.1, 1, 10, 100]
-            for i in range(10):
-                self._reset_iterates(random=True)
-
-                for j in range(len(rho_list)):
-                    # TODO: Random start
-                    self._options["rho"] = rho_list[j]
-                    rho_controller = util.RhoController(
-                        self._data["g"], self._options["rho"]
-                    )
-                    self._kkt_system.update_rho(rho_controller.get_rho_vec())
-                    self._iterates = admm.admm(
-                        self._data,
-                        self._kkt_system,
-                        self._options,
-                        rho_controller,
-                        **self._iterates,
-                        **self._scaling,
-                    )
-                if self._iterates["obj_val"] < best_obj:
-                    best_obj = self._iterates["obj_val"]
-                    best_x = self._iterates["x"]
-                    best_y = self._iterates["y"]
-
-            self._iterates = {}
-            self._iterates["obj_val"] = best_obj
-            self._iterates["x"] = best_x
-            self._iterates["y"] = best_y
+            for rho in rho_list:
+                # TODO: Random start
+                self._options["rho"] = rho
+                rho_controller = util.RhoController(
+                    self._data["g"], self._options["rho"]
+                )
+                self._kkt_system.update_rho(rho_controller.get_rho_vec())
+                self._iterates = admm.admm(
+                    self._data,
+                    self._kkt_system,
+                    self._options,
+                    rho_controller,
+                    **self._iterates,
+                    **self._scaling,
+                )
 
             self._options["max_iter"] = orig_max_iter
             self._options["rho"] = orig_rho
