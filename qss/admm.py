@@ -127,7 +127,8 @@ def admm(
     constr_dim = data["constr_dim"]
 
     rho_update = options["rho_update"]
-    alpha = options["alpha"]
+    schedule_alpha = options["schedule_alpha"]
+    alpha_init = options["alpha"]
     eps_abs = options["eps_abs"]
     eps_rel = options["eps_rel"]
     verbose = options["verbose"]
@@ -152,6 +153,10 @@ def admm(
     while not finished:
         iter_num += 1
         rho_vec = rho_controller.get_rho_vec()
+        if schedule_alpha and max_iter < np.inf:
+            alpha = alpha_init * (max_iter - iter_num + 1) / max_iter
+        else:
+            alpha = alpha_init
 
         # Update x
         if has_constr:

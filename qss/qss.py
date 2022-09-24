@@ -290,7 +290,6 @@ class QSS:
         else:
             orig_max_iter = self._options["max_iter"]
             orig_rho = self._options["rho"]
-            orig_alpha = self._options["alpha"]
             orig_warm_start = self._options["warm_start"]
 
             self._options["max_iter"] = 100
@@ -300,14 +299,12 @@ class QSS:
             best_y = None
 
             rho_list = [0.01, 0.1, 1, 10, 100]
-            alpha_list = [1, 1, 1, 0.1, 0.01]
             for i in range(10):
                 self._reset_iterates(random=True)
 
                 for j in range(len(rho_list)):
                     # TODO: Random start
                     self._options["rho"] = rho_list[j]
-                    self._options["alpha"] = alpha_list[j]
                     rho_controller = util.RhoController(
                         self._data["g"], self._options["rho"]
                     )
@@ -332,7 +329,6 @@ class QSS:
 
             self._options["max_iter"] = orig_max_iter
             self._options["rho"] = orig_rho
-            self._options["alpha"] = orig_alpha
             self._options["warm_start"] = orig_warm_start
 
         # Clean up preconditioning
@@ -352,5 +348,5 @@ class QSS:
         return (
             self._iterates["obj_val"],
             np.copy(self._iterates["x"]),
-            np.copy(self._iterates["y"] / self._rho_controller.get_rho_vec())
+            # np.copy(self  ._iterates["y"] / self._rho_controller.get_rho_vec())
         )
