@@ -83,9 +83,11 @@ def update_rho(
         if local_new_rho_cand / rho_controller.rho_by_block[i] > 5:
             # local_new_rho_cand = rho_controller.rho_by_block[i] * 5
             refactor = True
+            local_new_rho_cand = rho_controller.rho_by_block[i] * 5
         elif rho_controller.rho_by_block[i] / local_new_rho_cand > 5:
             # local_new_rho_cand = rho_controller.rho_by_block[i] / 5
             refactor = True
+            local_new_rho_cand = rho_controller.rho_by_block[i] / 5
         else:
             local_new_rho_cand = rho_controller.rho_by_block[i]
 
