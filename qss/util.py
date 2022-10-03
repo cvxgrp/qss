@@ -75,17 +75,18 @@ def print_footer():
 
 
 def print_status(iter_num, obj_val, r_prim, r_dual, rho_vec, solve_start_time):
-    print(
-        "{} | {}  {}  {}  {}  {}".format(
-            str(iter_num).rjust(5),
-            format(obj_val, ".2e").ljust(10),
-            format(np.linalg.norm(r_prim), ".2e").ljust(11),
-            format(np.linalg.norm(r_dual), ".2e").ljust(9),
-            # format(rho, ".2e").ljust(6),
-            rho_vec,
-            format(time.time() - solve_start_time, ".2e").ljust(8),
+    with np.printoptions(precision=2):
+        print(
+            "{} | {}  {}  {}  {}  {}".format(
+                str(iter_num).rjust(5),
+                format(obj_val, ".2e").ljust(10),
+                format(np.linalg.norm(r_prim), ".2e").ljust(11),
+                format(np.linalg.norm(r_dual), ".2e").ljust(9),
+                # format(rho, ".2e").ljust(6),
+                rho_vec,
+                format(time.time() - solve_start_time, ".2e").ljust(8),
+            )
         )
-    )
 
 
 def evaluate_objective(P, q, r, g, zk1, obj_scale, equil_scaling):
