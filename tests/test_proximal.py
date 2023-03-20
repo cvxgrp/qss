@@ -19,8 +19,7 @@ class TestZero:
 
     def test_subdiff(self):
         ls, rs = self.g.subdiff(np.ones(self.v.shape), 1, self.v)
-        res = ls == rs
-        assert np.all(res == 0)
+        assert np.allclose(ls, rs)
 
 
 class TestAbs:
