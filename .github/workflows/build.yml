@@ -29,6 +29,7 @@ jobs:
 
     deploy-conda:
         runs-on: ubuntu-latest
+        environment: deployment
 # sets default shell to remove need for source to run the conda shell
         defaults:
           run:
