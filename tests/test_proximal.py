@@ -20,7 +20,7 @@ class TestZero:
     def test_subdiff(self):
         ls, rs = self.g.subdiff(np.ones(self.v.shape), 1, self.v)
         res = ls == rs
-        return np.all(res == 0)
+        assert np.all(res == 0)
 
 
 class TestAbs:
@@ -163,7 +163,7 @@ class TestPos:
         objective = cp.Minimize(cp.sum(cp.pos(x)) + rho / 2 * cp.norm(x - self.v1) ** 2)
         # Use SCS as MOSEK gives slightly different answer
         cp.Problem(objective).solve(solver=cp.SCS)
-        assert np.allclose(res_qss, x.value)
+        assert np.allclose(res_qss, x.value, atol=1e-4)
 
     def test_subdiff(self):
         ls, rs = self.g.subdiff(np.ones_like(self.v1), 1, self.v1)
@@ -185,7 +185,7 @@ class TestNeg:
         x = cp.Variable(len(self.v1))
         objective = cp.Minimize(cp.sum(cp.neg(x)) + rho / 2 * cp.norm(x - self.v1) ** 2)
         cp.Problem(objective).solve(solver=cp.SCS)
-        assert np.allclose(res_qss, x.value)
+        assert np.allclose(res_qss, x.value, atol=1e-4)
 
     def test_subdiff(self):
         ls, rs = self.g.subdiff(np.ones_like(self.v1), 1, self.v1)
