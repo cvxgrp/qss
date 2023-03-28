@@ -29,6 +29,7 @@ jobs:
 
     deploy-conda:
         runs-on: ubuntu-latest
+        environment: deployment
 # sets default shell to remove need for source to run the conda shell
         defaults:
           run:
@@ -40,7 +41,7 @@ jobs:
           - name: Install Python
             uses: actions/setup-python@v3
             with:
-              python-version: "3.6"
+              python-version: "3.9"
 
           - name: Install Miniconda
             uses: conda-incubator/setup-miniconda@v2
@@ -68,10 +69,10 @@ jobs:
               conda config --set anaconda_upload no
               echo yes | anaconda login --username ${{ secrets.ANACONDA_CLOUD_USERNAME }} --password ${{ secrets.ANACONDA_CLOUD_PASSWORD }}
               git fetch --prune --unshallow --tags
-              VERSION_FROM_GIT_TAG=$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-) conda build . -c conda-forge -c slacgismo --numpy 1.16.4
+              VERSION_FROM_GIT_TAG=$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-) conda build . -c conda-forge -c stanfordcvxgrp --numpy 1.16.4
               echo '::set-output name=gitversion::$(git tag --list "v*[0-9]" --sort=version:refname | tail -1 | cut -c 2-)'
 
           - name: Upload the Anaconda Package
             id: condaload
             run: |
-              anaconda upload -u slacgismo  /usr/share/miniconda3/conda-bld/noarch/solar-data-tools-${{ steps.mambabuild.outputs.gitversion }}-*.tar.bz2
+              anaconda upload -u stanfordcvxgrp  /usr/share/miniconda3/conda-bld/noarch/qss-${{ steps.mambabuild.outputs.gitversion }}-*.tar.bz2
