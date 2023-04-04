@@ -270,7 +270,6 @@ class QSS:
             max_iter_list = np.atleast_1d(self._options["max_iter"])
             if not (isinstance(max_iter_list[0], int)
                     or isinstance(max_iter_list[0], np.int64)):
-                print(max_iter_list[0], type(max_iter_list[0]))
                 raise ValueError("max_iter should be an integer or a list of integers.")
             # I am only implementing this for ADMM --BM 4/4/23
             if len(max_iter_list) == 1:
