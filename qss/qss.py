@@ -22,8 +22,7 @@ class QSS:
         if "P" not in data:
             raise ValueError("P matrix must be specified.")
 
-        self._data = {}
-        self._data["dim"] = data["P"].shape[0]
+        data_dim = data["P"].shape[0]
 
         if "q" not in data:
             raise ValueError("q vector must be specified.")
@@ -31,14 +30,14 @@ class QSS:
             raise ValueError("r scalar must be specified.")
         if data["P"].shape[0] != data["P"].shape[1]:
             raise ValueError("P must be a square matrix")
-        if len(data["q"]) != self._data["dim"]:
+        if len(data["q"]) != data_dim:
             raise ValueError("q dimensions must correspond to P.")
 
         # Checking constraints
         if "A" in data and data["A"] is not None:
             if "b" not in data or data["b"] is None:
                 raise ValueError("Constraint vector not specified.")
-            if data["A"].shape[1] != self._data["dim"]:
+            if data["A"].shape[1] != data_dim:
                 raise ValueError(
                     "Constraint matrix column number must correspond to P."
                 )
@@ -62,7 +61,7 @@ class QSS:
                 raise ValueError("g function range must be specified.")
             if g["range"][0] < 0:
                 raise ValueError("Range out of bounds.")
-            if g["range"][1] > self._data["dim"]:
+            if g["range"][1] > data_dim:
                 raise ValueError("Range out of bounds.")
             if g["range"][0] > g["range"][1]:
                 raise ValueError("Start index must be <= end index.")
@@ -73,35 +72,12 @@ class QSS:
                 raise ValueError("g function ranges must not overlap.")
 
         # Making copies of the input data and storing
-        if type(data["P"]) is not linearoperator.LinearOperator:
-            self._data["P"] = data["P"].copy()
+        self._data = util.copy_problem_data(data)
+        
+        if self._data["g"]._is_convex:
+            self._relaxed_data = None
         else:
-            self._data["P"] = data["P"]
-        self._data["q"] = np.copy(data["q"])
-        self._data["r"] = data["r"]
-        self._data["g"] = proximal.GCollection(data["g"], self._data["dim"])
-
-        self._data["abstract_constr"] = False
-        if ("A" in data) and (type(data["A"]) is linearoperator.LinearOperator):
-            self._data["A"] = data["A"]  # TODO: in future, copy w/ linop .copy()
-            self._data["b"] = np.copy(data["b"])
-            self._data["abstract_constr"] = True
-            self._data["has_constr"] = True
-            self._data["constr_dim"] = data["A"].shape[0]
-        elif ("A" not in data) or (data["A"] is None) or (data["A"].nnz == 0):
-            # TODO: get rid of this placeholder when QSS is more object-oriented, i.e.,
-            # when all problem data is passed around together.
-            # I'm using the placeholder for now to avoid littering precondition.py with
-            # 'if' statements.
-            self._data["A"] = sp.sparse.csc_matrix((1, self._data["dim"]))
-            self._data["b"] = np.zeros(1)
-            self._data["has_constr"] = False
-            self._data["constr_dim"] = 1
-        else:
-            self._data["A"] = data["A"].copy()
-            self._data["b"] = np.copy(data["b"])
-            self._data["has_constr"] = True
-            self._data["constr_dim"] = data["A"].shape[0]
+            self._relaxed_data = {}
 
         # Unscaled data
         self._unscaled_data = {}
