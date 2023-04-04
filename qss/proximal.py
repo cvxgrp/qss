@@ -476,7 +476,7 @@ class IsBool(G):
 
 
 class GCollection:
-    def __init__(self, g_list, dim):
+    def __init__(self, g_list, dim, relax=False):
         self._g_list = []
         self._is_convex = True
         self._all_zeros = True
@@ -487,9 +487,6 @@ class GCollection:
         )
 
         for i, g in enumerate(g_list):
-            weight = 1
-            scale = 1
-            shift = 0
             if "args" in g and "weight" in g["args"]:
                 weight = g["args"]["weight"]
             else:
@@ -530,13 +527,20 @@ class GCollection:
             elif name == "neg":
                 func = Neg(weight, scale, shift)
             elif name == "card":
-                func = Card(weight, scale, shift)
+                if not relax:
+                    func = Card(weight, scale, shift)
+                else:
+                    func = Abs(weight, scale, shift)
             elif name == "card_constr":
-                if "args" in g and "k" in g["args"]:
-                    k = g["args"]["k"]
-                else: 
-                    k = 1
-                func = CardConstr(weight, scale, shift, k)
+                if not relax:
+                    if "args" in g and "k" in g["args"]:
+                        k = g["args"]["k"]
+                    else:
+                        k = 1
+                    func = CardConstr(weight, scale, shift, k)
+                else:
+                    # TODO: check this relaxation
+                    func = Abs(1e-1, scale, shift)
             elif name == "quantile":
                 if "args" in g and "tau" in g["args"]:
                     tau = g["args"]["tau"]
@@ -552,15 +556,24 @@ class GCollection:
                     M = 1
                 func = Huber(weight, scale, shift, M)
             elif name == "is_int":
-                func = IsInt(weight, scale, shift)
+                if not relax:
+                    func = IsInt(weight, scale, shift)
+                else:
+                    func = Zero(weight, scale, shift)
             elif name == "is_finite_set":
                 if "args" in g and "S" in g["args"]:
-                    S = g["args"]["S"]
+                    value_set = g["args"]["S"]
                 else:
                     raise ValueError("is_finite_set set must be specified.")
-                func = IsFiniteSet(weight, scale, shift, S)
+                if not relax:
+                    func = IsFiniteSet(weight, scale, shift, value_set)
+                else:
+                    func = IsBound(weight, scale, shift, np.min(value_set), np.max(value_set))
             elif name == "is_bool":
-                func = IsBool(weight, scale, shift)
+                if not relax:
+                    func = IsBool(weight, scale, shift)
+                else:
+                    func = IsBound(weight, scale, shift, 0, 1)
 
             if not func._is_convex:
                 self._is_convex = False
