@@ -232,7 +232,8 @@ class QSS:
 
         if self._data["g"]._is_convex or not self._options["rho_update"] == "schedule":
             max_iter_list = np.atleast_1d(self._options["max_iter"])
-            if type(max_iter_list[0]) is not int:
+            if not (isinstance(max_iter_list[0], int)
+                    or isinstance(max_iter_list[0], np.int64)):
                 raise ValueError("max_iter should be an integer or a list of integers.")
             for i, algorithm in enumerate(np.atleast_1d(algorithms)):
                 if i == 0 and algorithm == "proj_sd":
