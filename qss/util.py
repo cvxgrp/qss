@@ -128,7 +128,7 @@ class RhoController:
         return rho_vec
 
 
-def copy_problem_data(data):
+def copy_problem_data(data, relax=False):
     data_copy = {}
     # Making copies of the input data and storing
     if type(data["P"]) is not linearoperator.LinearOperator:
@@ -138,7 +138,7 @@ def copy_problem_data(data):
     data_copy["dim"] = data["P"].shape[0]
     data_copy["q"] = np.copy(data["q"])
     data_copy["r"] = data["r"]
-    data_copy["g"] = proximal.GCollection(data["g"], data_copy["dim"])
+    data_copy["g"] = proximal.GCollection(data["g"], data_copy["dim"], relax=relax)
 
     data_copy["abstract_constr"] = False
     if ("A" in data) and (type(data["A"]) is linearoperator.LinearOperator):

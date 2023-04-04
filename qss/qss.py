@@ -77,7 +77,7 @@ class QSS:
         if self._data["g"]._is_convex:
             self._relaxed_data = None
         else:
-            self._relaxed_data = {}
+            self._relaxed_data = util.copy_problem_data(data, relax=True)
 
         # Unscaled data
         self._unscaled_data = {}
