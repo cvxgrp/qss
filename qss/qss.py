@@ -231,14 +231,10 @@ class QSS:
             )
 
         if self._data["g"]._is_convex or not self._options["rho_update"] == "schedule":
-            max_iter_list = self._options[
-                "max_iter"
-            ]  # TODO get rid of this or make more elegant
-            if type(max_iter_list) is int:
-                max_iter_list = [max_iter_list]
-            if type(max_iter_list) is not list:
-                raise ValueError("max_iter should be an integer or a list.")
-            for i, algorithm in enumerate(algorithms):
+            max_iter_list = np.atleast_1d(self._options["max_iter"])
+            if type(max_iter_list[0]) is not int:
+                raise ValueError("max_iter should be an integer or a list of integers.")
+            for i, algorithm in enumerate(np.atleast_1d(algorithms)):
                 if i == 0 and algorithm == "proj_sd":
                     self._iterates["x"] = sp.sparse.linalg.lsqr(
                         self._data["A"], self._data["b"], atol=1e-12, btol=1e-12
@@ -265,7 +261,29 @@ class QSS:
                     raise ValueError("Invalid algorithm specified")
 
             self._options["max_iter"] = max_iter_list
+        elif not self._data["g"]._is_convex:
+            max_iter_list = np.atleast_1d(self._options["max_iter"])
+            if type(max_iter_list[0]) is not int:
+                raise ValueError("max_iter should be an integer or a list of integers.")
+            # I am only implementing this for ADMM --BM 4/4/23
+            if len(max_iter_list) == 1:
+                max_iter_list = np.r_[max_iter_list, max_iter_list]
+            data_list = [self._relaxed_data, self._data]
+            warm_start_list = [False, True]
 
+            for i, data in enumerate(data_list):
+                self._options["max_iter"] = max_iter_list[i]
+                self._options["warm_start"] = warm_start_list[i]
+                self._iterates = admm.admm(
+                    data,
+                    self._kkt_system,
+                    self._options,
+                    self._rho_controller,
+                    **self._iterates,
+                    **self._scaling,
+                )
+
+            self._options["max_iter"] = max_iter_list
         else:
             orig_max_iter = self._options["max_iter"]
             orig_rho = self._options["rho"]
