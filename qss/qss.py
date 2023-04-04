@@ -212,6 +212,7 @@ class QSS:
 
         # Reset problem parameters if not warm starting
         if not self._options["warm_start"]:
+            if self._options["debug"]: print('### DEBUG ###\nresetting iterates\n#############')
             self._reset_iterates(self._options["random_init"])
             self._rho_controller = None
 
