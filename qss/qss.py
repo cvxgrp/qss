@@ -230,7 +230,9 @@ class QSS:
                 )
             )
 
-        if self._data["g"]._is_convex or not self._options["rho_update"] == "schedule":
+        if self._data["g"]._is_convex and not self._options["rho_update"] == "schedule":
+            if self._options["verbose"]:
+                print('(standard algorithm)')
             max_iter_list = np.atleast_1d(self._options["max_iter"])
             if not (isinstance(max_iter_list[0], int)
                     or isinstance(max_iter_list[0], np.int64)):
@@ -263,6 +265,8 @@ class QSS:
 
             self._options["max_iter"] = max_iter_list
         elif not self._data["g"]._is_convex:
+            if self._options["verbose"]:
+                print('(nonconvex warm-start algorithm)')
             max_iter_list = np.atleast_1d(self._options["max_iter"])
             if type(max_iter_list[0]) is not int:
                 raise ValueError("max_iter should be an integer or a list of integers.")
@@ -286,6 +290,8 @@ class QSS:
 
             self._options["max_iter"] = max_iter_list
         else:
+            if self._options["verbose"]:
+                print('(scheduled algorithm)')
             orig_max_iter = self._options["max_iter"]
             orig_rho = self._options["rho"]
             orig_warm_start = self._options["warm_start"]
