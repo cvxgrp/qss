@@ -568,7 +568,7 @@ class GCollection:
                 if not relax:
                     func = IsFiniteSet(weight, scale, shift, value_set)
                 else:
-                    func = IsBound(weight, scale, shift, np.min(value_set), np.max(value_set))
+                    func = IsBound(weight, scale, shift, min(value_set), max(value_set))
             elif name == "is_bool":
                 if not relax:
                     func = IsBool(weight, scale, shift)
