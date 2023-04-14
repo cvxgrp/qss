@@ -1,6 +1,7 @@
 import numpy as np
 import scipy as sp
 import time
+import os
 from qss import proximal
 from qss import matrix
 from qss import util
@@ -114,6 +115,21 @@ def admm(
         print("ADMM solve".center(util.PRINT_WIDTH))
         util.print_header()
         admm_start_time = time.time()
+    if options["debug"]:
+        debug_start = time.strftime("%Y%m%d_%H%M%S") + f"_{int(np.round(np.modf(time.time())[0],4)*1e4)}"
+        statement = "####################\ndebug start: "
+        statement += debug_start + "\n"
+        ws = options["warm_start"]
+        statement += f"warm start: {ws}\n"
+        statement += '####################'
+        print(statement)
+        fn_x = debug_start + f"__passed_x.txt"
+        fn_y = debug_start + f"__passed_y.txt"
+        folder_loc = 'debug/'
+        if not os.path.exists(folder_loc):
+            os.makedirs(folder_loc)
+        np.savetxt(folder_loc + fn_x, x)
+        np.savetxt(folder_loc + fn_y, y)
 
     # Unpacking data
     P = data["P"]
@@ -151,6 +167,14 @@ def admm(
     finished = False
 
     while not finished:
+        if options["debug"] and (iter_num <= 5 or iter_num % 10 == 0):
+            folder_loc = 'debug/'
+            if not os.path.exists(folder_loc):
+                os.makedirs(folder_loc)
+            fn_x = debug_start + f"_{iter_num:04}_x.txt"
+            fn_z = debug_start + f"_{iter_num:04}_z.txt"
+            np.savetxt(folder_loc + fn_x, xk1)
+            np.savetxt(folder_loc + fn_z, zk)
         iter_num += 1
         rho_vec = rho_controller.get_rho_vec()
         if schedule_alpha and max_iter < np.inf:
