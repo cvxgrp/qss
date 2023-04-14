@@ -139,6 +139,7 @@ class QSS:
         self._options["random_init"] = None
         self._options["init_seed"] = None
         self._options["verbose"] = None
+        self._options["debug"] = None
         return
 
     def _reset_scaling(self):
@@ -181,6 +182,7 @@ class QSS:
         random_init=False,
         init_seed=1234,
         verbose=False,
+        debug=False
     ):
 
         self._options["eps_abs"] = eps_abs
@@ -200,6 +202,7 @@ class QSS:
         self._options["random_init"] = random_init
         self._options["init_seed"] = init_seed
         self._options["verbose"] = verbose
+        self._options["debug"] = debug
 
         np.random.seed(1234)
 
@@ -209,6 +212,7 @@ class QSS:
 
         # Reset problem parameters if not warm starting
         if not self._options["warm_start"]:
+            if self._options["debug"]: print('### DEBUG ###\nresetting iterates\n#############')
             self._reset_iterates(self._options["random_init"])
             self._rho_controller = None
 
