@@ -2,27 +2,28 @@ import numpy as np
 import scipy as sp
 import time
 from qss import proximal
+from qss import linearoperator
 
 PRINT_WIDTH = 63
 BULLET_WIDTH = 32
 
 
 def evaluate_stop_crit(
-    xk1,
-    zk,
-    zk1,
-    uk1,
-    nuk1,
-    dim,
-    rho_vec,
-    eps_abs,
-    eps_rel,
-    P,
-    q,
-    A,
-    b,
-    crit="orig",
-    ord=np.inf,
+        xk1,
+        zk,
+        zk1,
+        uk1,
+        nuk1,
+        dim,
+        rho_vec,
+        eps_abs,
+        eps_rel,
+        P,
+        q,
+        A,
+        b,
+        crit="orig",
+        ord=np.inf,
 ):
     if crit == "admm":
         r_prim = np.linalg.norm(xk1 - zk1, ord=ord)
@@ -125,3 +126,39 @@ class RhoController:
             rho_vec[start_index:end_index] = self.rho_by_block[index]
 
         return rho_vec
+
+
+def copy_problem_data(data, relax=False):
+    data_copy = {}
+    # Making copies of the input data and storing
+    if type(data["P"]) is not linearoperator.LinearOperator:
+        data_copy["P"] = data["P"].copy()
+    else:
+        data_copy["P"] = data["P"]
+    data_copy["dim"] = data["P"].shape[0]
+    data_copy["q"] = np.copy(data["q"])
+    data_copy["r"] = data["r"]
+    data_copy["g"] = proximal.GCollection(data["g"], data_copy["dim"], relax=relax)
+
+    data_copy["abstract_constr"] = False
+    if ("A" in data) and (type(data["A"]) is linearoperator.LinearOperator):
+        data_copy["A"] = data["A"]  # TODO: in future, copy w/ linop .copy()
+        data_copy["b"] = np.copy(data["b"])
+        data_copy["abstract_constr"] = True
+        data_copy["has_constr"] = True
+        data_copy["constr_dim"] = data["A"].shape[0]
+    elif ("A" not in data) or (data["A"] is None) or (data["A"].nnz == 0):
+        # TODO: get rid of this placeholder when QSS is more object-oriented, i.e.,
+        # when all problem data is passed around together.
+        # I'm using the placeholder for now to avoid littering precondition.py with
+        # 'if' statements.
+        data_copy["A"] = sp.sparse.csc_matrix((1, data_copy["dim"]))
+        data_copy["b"] = np.zeros(1)
+        data_copy["has_constr"] = False
+        data_copy["constr_dim"] = 1
+    else:
+        data_copy["A"] = data["A"].copy()
+        data_copy["b"] = np.copy(data["b"])
+        data_copy["has_constr"] = True
+        data_copy["constr_dim"] = data["A"].shape[0]
+    return data_copy
