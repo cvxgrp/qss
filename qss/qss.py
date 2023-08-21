@@ -238,8 +238,7 @@ class QSS:
             if self._options["verbose"]:
                 print('(standard algorithm)')
             max_iter_list = np.atleast_1d(self._options["max_iter"])
-            if not (isinstance(max_iter_list[0], int)
-                    or isinstance(max_iter_list[0], np.int64)):
+            if not int(max_iter_list[0])==max_iter_list[0]:
                 raise ValueError("max_iter should be an integer or a list of integers.")
             for i, algorithm in enumerate(np.atleast_1d(algorithms)):
                 if i == 0 and algorithm == "proj_sd":
@@ -272,8 +271,7 @@ class QSS:
             if self._options["verbose"]:
                 print('(nonconvex warm-start algorithm)')
             max_iter_list = np.atleast_1d(self._options["max_iter"])
-            if not (isinstance(max_iter_list[0], int)
-                    or isinstance(max_iter_list[0], np.int64)):
+            if not int(max_iter_list[0])==max_iter_list[0]:
                 raise ValueError("max_iter should be an integer or a list of integers.")
             # I am only implementing this for ADMM --BM 4/4/23
             if len(max_iter_list) == 1:
