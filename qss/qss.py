@@ -234,7 +234,10 @@ class QSS:
                 )
             )
         max_iter_list = np.atleast_1d(self._options["max_iter"])
-        max_iter_list_int = [int(mxi) for mxi in max_iter_list]
+        try:
+            max_iter_list_int = [int(mxi) for mxi in max_iter_list]
+        except ValueError:
+            raise ValueError("max_iter should be an integer or a list of integers.")
         # robust int check that works with various numpy int types
         if not np.allclose(max_iter_list_int, max_iter_list):
             raise ValueError("max_iter should be an integer or a list of integers.")
