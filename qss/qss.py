@@ -233,14 +233,19 @@ class QSS:
                     "s",
                 )
             )
-
+        max_iter_list = np.atleast_1d(self._options["max_iter"])
+        try:
+            max_iter_list_int = [int(mxi) for mxi in max_iter_list]
+        except ValueError:
+            raise ValueError("max_iter should be an integer or a list of integers.")
+        # robust int check that works with various numpy int types
+        if not np.allclose(max_iter_list_int, max_iter_list):
+            raise ValueError("max_iter should be an integer or a list of integers.")
+        else:
+            max_iter_list = max_iter_list_int
         if self._data["g"]._is_convex and not self._options["rho_update"] == "schedule":
             if self._options["verbose"]:
                 print('(standard algorithm)')
-            max_iter_list = np.atleast_1d(self._options["max_iter"])
-            if not (isinstance(max_iter_list[0], int)
-                    or isinstance(max_iter_list[0], np.int64)):
-                raise ValueError("max_iter should be an integer or a list of integers.")
             for i, algorithm in enumerate(np.atleast_1d(algorithms)):
                 if i == 0 and algorithm == "proj_sd":
                     self._iterates["x"] = sp.sparse.linalg.lsqr(
@@ -271,10 +276,6 @@ class QSS:
         elif not self._data["g"]._is_convex:
             if self._options["verbose"]:
                 print('(nonconvex warm-start algorithm)')
-            max_iter_list = np.atleast_1d(self._options["max_iter"])
-            if not (isinstance(max_iter_list[0], int)
-                    or isinstance(max_iter_list[0], np.int64)):
-                raise ValueError("max_iter should be an integer or a list of integers.")
             # I am only implementing this for ADMM --BM 4/4/23
             if len(max_iter_list) == 1:
                 max_iter_list = np.r_[max_iter_list, max_iter_list]

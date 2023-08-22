@@ -115,9 +115,9 @@ class TestOptions:
 
     def test_bad_max_iter(self):
         with pytest.raises(ValueError) as exc_info:
-            self.solver.solve(max_iter=100.0)
+            self.solver.solve(max_iter=100.1)
         print(exc_info.value)
-
+        
         with pytest.raises(ValueError) as exc_info:
-            self.solver.solve(max_iter="100")
+            self.solver.solve(max_iter="100.1")
         print(exc_info.value)
