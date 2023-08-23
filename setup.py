@@ -19,7 +19,7 @@ VERSION_FROM_GIT_TAG = tags[-1][1:]
 
 setup(
     name="qss",
-    version="VERSION_FROM_GIT_TAG",
+    version=VERSION_FROM_GIT_TAG,
     author="Luke Volpatti",
     description="QSS: Quadratic-Separable Solver",
     long_description=long_description,
