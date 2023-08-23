@@ -3,9 +3,22 @@ from setuptools import setup
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
+# get all the git tags from the cmd line that follow our versioning pattern
+git_tags = subprocess.Popen(
+    ["git", "tag", "--list", "v*[0-9]", "--sort=version:refname"],
+    stdout=subprocess.PIPE,
+)
+tags = git_tags.stdout.read()
+git_tags.stdout.close()
+tags = tags.decode("utf-8").split("\n")
+tags.sort()
+
+# PEP 440 won't accept the v in front, so here we remove it, strip the new line and decode the byte stream
+VERSION_FROM_GIT_TAG = tags[-1][1:]
+
 setup(
     name="qss",
-    version="0.2.2",
+    version="VERSION_FROM_GIT_TAG",
     author="Luke Volpatti",
     description="QSS: Quadratic-Separable Solver",
     long_description=long_description,
