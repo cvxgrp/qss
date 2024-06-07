@@ -54,7 +54,6 @@ jobs:
               sudo python3 -m build
 
     test-build-conda:
-        needs: run-tests
         runs-on: ubuntu-latest
 # sets default shell to remove need for source to run the conda shell
         defaults:
