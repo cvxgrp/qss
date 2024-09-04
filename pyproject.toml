@@ -39,7 +39,6 @@ classifiers = [
 ]
 dynamic = ["version"]
 [tool.setuptools_scm]
-write_to = "qss/_version.py"
 
 [tool.setuptools.packages.find]
 include = ["qss*"]
