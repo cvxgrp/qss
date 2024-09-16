@@ -16,7 +16,7 @@ maintainers = [
 requires-python = ">=3.6"
 
 dependencies = [
-    "scipy",
+    "scipy==1.13.1",
     "numpy",
     "cvxpy",
     "qdldl",

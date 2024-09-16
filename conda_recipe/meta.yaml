@@ -20,7 +20,7 @@ requirements:
   run:
     - pip
     - python
-    - scipy
+    - scipy==1.13.1
     - numpy
     - qdldl-python
     - cvxpy
