@@ -5,7 +5,7 @@ package:
   version: {{ environ.get('VERSION_FROM_GIT_TAG') }}
 
 source:
-  git_url: https://github.com/cvxgrp/qss
+  path: .. # checked out repo instead of main repo branch
 
 build:
   noarch: python
@@ -16,27 +16,30 @@ requirements:
   host:
     - pip
     - python >=3.6
-    - scipy
-    - numpy >=1.16
-    - qdldl-python
-    - cvxpy
-    - matplotlib
 
   run:
     - pip
     - python
-    - scipy
-    - numpy >=1.16
+    - scipy==1.13.1
+    - numpy
     - qdldl-python
     - cvxpy
     - matplotlib
 
+test:
+  imports:
+    - qss
+  commands:
+    - pip check
+  requires:
+    - pip
+
 about:
   home: https://github.com/cvxgrp/qss
-  license: BSD
-  license_family: BSD
-  license_file:
-  summary: QSS Quadratic-Seperable Solver
+  license: Apache
+  license_family: Apache
+  license_file: LICENSE
+  summary: QSS Quadratic-Separable Solver
   doc_url:
   dev_url:
 
@@ -44,3 +47,4 @@ extra:
   recipe-maintainers:
     - lukevolpatti
     - Thistleman
+    - pluflou
